@@ -1,5 +1,7 @@
 #pragma once
 #include "ScheduleCommon.h"
+#include "LinearAllocator.h"
+
 #include <vector>
 #include <random>
 #include <tuple>
@@ -27,6 +29,11 @@ void InitChromosomes(std::vector<std::size_t>& lessons,
                      std::size_t requestIndex);
 
 std::tuple<std::vector<std::size_t>, std::vector<ClassroomAddress>> InitChromosomes(const std::vector<SubjectRequest>& requests);
+
+std::size_t EvaluateSchedule(LinearAllocatorBufferSpan& bufferSpan,
+                             const std::vector<SubjectRequest>& requests,
+                             const std::vector<std::size_t>& lessons,
+                             const std::vector<ClassroomAddress>& classrooms);
 
 
 class ScheduleIndividual
