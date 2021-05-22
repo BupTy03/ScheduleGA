@@ -50,12 +50,7 @@ ScheduleGAStatistics ScheduleGA::Start(const std::vector<SubjectRequest>& reques
     std::mt19937 randGen(randomDevice());
 
     std::uniform_int_distribution<std::size_t> selectionBestDist(0, SelectionCount() - 1);
-    std::uniform_int_distribution<std::size_t> selectionDist(0, individuals_.size() - 1);
-    std::uniform_int_distribution<std::size_t> requestsDist(0, requests.size() - 1);
-
-    auto individualLess = [&](const ScheduleIndividual& lhs, const ScheduleIndividual& rhs) {
-        return lhs.Evaluate() < rhs.Evaluate();
-    };
+    std::uniform_int_distribution<std::size_t> individualsDist(0, individuals_.size() - 1);
 
     const auto beginTime = std::chrono::steady_clock::now();
 
@@ -74,12 +69,12 @@ ScheduleGAStatistics ScheduleGA::Start(const std::vector<SubjectRequest>& reques
         });
 
         // select best
-        std::partial_sort(std::execution::par_unseq, individuals_.begin(), individuals_.begin() + SelectionCount(), individuals_.end(), individualLess);
+        std::partial_sort(individuals_.begin(), individuals_.begin() + SelectionCount(), individuals_.end(), ScheduleIndividualLess());
         const std::size_t currentBestEvaluated = individuals_.front().Evaluate();
 
         //std::cout << "Iteration: " << iteration << "; Best: " << currentBestEvaluated << '\n';
         if(currentBestEvaluated < prevEvaluated)
-        result.Iterations = iteration;
+            result.Iterations = iteration;
 
         prevEvaluated = currentBestEvaluated;
 
@@ -87,20 +82,20 @@ ScheduleGAStatistics ScheduleGA::Start(const std::vector<SubjectRequest>& reques
         for(std::size_t i = 0; i < CrossoverCount(); ++i)
         {
             auto& firstInd = individuals_.at(selectionBestDist(randGen));
-            auto& secondInd = individuals_.at(selectionDist(randGen));
+            auto& secondInd = individuals_.at(individualsDist(randGen));
 
-            firstInd.Crossover(secondInd, requestsDist(randGen));
+            firstInd.Crossover(secondInd);
             firstInd.Evaluate();
             secondInd.Evaluate();
         }
 
         // natural selection
-        std::nth_element(std::execution::par_unseq, individuals_.begin(), individuals_.end() - SelectionCount(), individuals_.end(), individualLess);
-        std::sort(std::execution::par_unseq, individuals_.end() - SelectionCount(), individuals_.end(), individualLess);
-        std::copy_n(std::execution::par_unseq, individuals_.begin(), SelectionCount(), individuals_.end() - SelectionCount());
+        std::nth_element(individuals_.begin(), individuals_.end() - SelectionCount(), individuals_.end(), ScheduleIndividualLess());
+        std::sort(individuals_.end() - SelectionCount(), individuals_.end(), ScheduleIndividualLess());
+        std::copy_n(individuals_.begin(), SelectionCount(), individuals_.end() - SelectionCount());
     }
 
-    std::sort(std::execution::par_unseq, individuals_.begin(), individuals_.end(), individualLess);
+    std::sort(individuals_.begin(), individuals_.end(), ScheduleIndividualLess());
     result.Time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginTime);
     return result;
 }

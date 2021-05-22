@@ -189,7 +189,7 @@ int main()
 		.Start(requests);
 
 	const auto& bestIndividual = algo.Best();
-	Print(bestIndividual, requests);
+	Print(bestIndividual);
 	std::cout << "Best: " << bestIndividual.Evaluate() << '\n';
 	std::cout << "Time: " << std::chrono::duration_cast<std::chrono::seconds>(stat.Time).count() << "s.\n";
 	std::cout << "Iterations: " << stat.Iterations << '\n';

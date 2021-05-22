@@ -10,19 +10,172 @@
 constexpr std::size_t NO_LESSON = std::numeric_limits<std::size_t>::max();
 
 
+bool GroupsOrProfessorsOrClassroomsIntersects(const std::vector<SubjectRequest>& requests,
+                                              const std::vector<std::size_t>& lessons,
+                                              const std::vector<ClassroomAddress>& classrooms,
+                                              std::size_t currentRequest,
+                                              std::size_t currentLesson)
+{
+    const auto& thisRequest = requests.at(currentRequest);
+    auto it = std::find(lessons.begin(), lessons.end(), currentLesson);
+    while(it != lessons.end())
+    {
+        const std::size_t requestIndex = std::distance(lessons.begin(), it);
+        const auto& otherRequest = requests.at(requestIndex);
+        if(thisRequest.Professor() == otherRequest.Professor() || 
+           classrooms.at(currentRequest) == classrooms.at(requestIndex) || 
+           set_intersects(thisRequest.Groups(), otherRequest.Groups()))
+            return true;
+
+        it = std::find(std::next(it), lessons.end(), currentLesson);
+    }
+
+    return false;
+}
+
+bool GroupsOrProfessorsIntersects(const std::vector<SubjectRequest>& requests,
+                                  const std::vector<std::size_t>& lessons,
+                                  std::size_t currentRequest, 
+                                  std::size_t currentLesson)
+{
+    const auto& thisRequest = requests.at(currentRequest);
+    auto it = std::find(lessons.begin(), lessons.end(), currentLesson);
+    while(it != lessons.end())
+    {
+        const std::size_t requestIndex = std::distance(lessons.begin(), it);
+        const auto& otherRequest = requests.at(requestIndex);
+        if(thisRequest.Professor() == otherRequest.Professor() || set_intersects(thisRequest.Groups(), otherRequest.Groups()))
+            return true;
+
+        it = std::find(std::next(it), lessons.end(), currentLesson);
+    }
+
+    return false;
+}
+
+bool ClassroomsIntersects(const std::vector<std::size_t>& lessons,
+                          const std::vector<ClassroomAddress>& classrooms,
+                          std::size_t currentLesson,
+                          const ClassroomAddress& currentClassroom)
+{
+    auto it = std::find(classrooms.begin(), classrooms.end(), currentClassroom);
+    while(it != classrooms.end())
+    {
+        const std::size_t requestIndex = std::distance(classrooms.begin(), it);
+        const std::size_t otherLesson = lessons.at(requestIndex);
+        if(currentLesson == otherLesson)
+            return true;
+
+        it = std::find(std::next(it), classrooms.end(), currentClassroom);
+    }
+
+    return false;
+}
+
+void InitChromosomes(std::vector<std::size_t>& lessons,
+                     std::vector<ClassroomAddress>& classrooms,
+                     const std::vector<SubjectRequest>& requests,
+                     std::size_t requestIndex)
+{
+    assert(requests.size() == classrooms.size());
+    assert(requests.size() == lessons.size());
+
+    const auto& request = requests.at(requestIndex);
+    const auto& requestClassrooms = request.Classrooms();
+
+    for(std::size_t dayLesson = 0; dayLesson < MAX_LESSONS_PER_DAY; ++dayLesson)
+    {
+        for(std::size_t day = 0; day < DAYS_IN_SCHEDULE; ++day)
+        {
+            if(!request.RequestedWeekDay(day))
+                continue;
+
+            const std::size_t scheduleLesson = day * MAX_LESSONS_PER_DAY + dayLesson;
+            if(GroupsOrProfessorsIntersects(requests, lessons, requestIndex, scheduleLesson))
+                continue;
+
+            lessons.at(requestIndex) = scheduleLesson;
+            if(requestClassrooms.empty())
+            {
+                classrooms.at(requestIndex) = ClassroomAddress::Any();
+                return;
+            }
+
+            for(auto&& classroom : requestClassrooms)
+            {
+                if(!ClassroomsIntersects(lessons, classrooms, scheduleLesson, classroom))
+                {
+                    classrooms.at(requestIndex) = classroom;
+                    return;
+                }
+            }
+        }
+    }
+}
+
+std::tuple<std::vector<std::size_t>, std::vector<ClassroomAddress>> InitChromosomes(const std::vector<SubjectRequest>& requests)
+{
+    std::tuple<std::vector<std::size_t>, std::vector<ClassroomAddress>> chromosomes;
+    auto& lessons = std::get<0>(chromosomes);
+    auto& classrooms = std::get<1>(chromosomes);
+
+    lessons.resize(requests.size(), NO_LESSON);
+    classrooms.resize(requests.size(), ClassroomAddress::NoClassroom());
+
+    for(std::size_t i = 0; i < requests.size(); ++i)
+        InitChromosomes(std::get<0>(chromosomes), std::get<1>(chromosomes), requests, i);
+
+    return chromosomes;
+}
+
+bool ReadyToCrossover(const ScheduleIndividual& first,
+                      const ScheduleIndividual& second,
+                      std::size_t requestIndex)
+{
+    
+    assert(first.Requests() == second.Requests());
+
+    const auto& requests = first.Requests();
+    assert(!requests.empty());
+    assert(requests.size() == first.Lessons().size());
+    assert(requests.size() == second.Lessons().size());
+    assert(requests.size() == first.Classrooms().size());
+    assert(requests.size() == second.Classrooms().size());
+
+    const auto& thisLessons = first.Lessons();
+    const auto& thisClassrooms = first.Classrooms();
+    const auto thisLesson = thisLessons.at(requestIndex);
+    const auto thisClassroom = thisClassrooms.at(requestIndex);
+
+    const auto& otherLessons = second.Lessons();
+    const auto& otherClassrooms = second.Classrooms();
+    const auto otherLesson = otherLessons.at(requestIndex);
+    const auto otherClassroom = otherClassrooms.at(requestIndex);
+
+    if(ClassroomsIntersects(thisLessons, thisClassrooms, otherLesson, otherClassroom) ||
+        ClassroomsIntersects(otherLessons, otherClassrooms, thisLesson, thisClassroom))
+        return false;
+
+    if(GroupsOrProfessorsOrClassroomsIntersects(requests, thisLessons, thisClassrooms, requestIndex, otherLesson) ||
+        GroupsOrProfessorsOrClassroomsIntersects(requests, otherLessons, otherClassrooms, requestIndex, thisLesson))
+        return false;
+
+    return true;
+}
+
+
 ScheduleIndividual::ScheduleIndividual(std::random_device& randomDevice,
                                        const std::vector<SubjectRequest>* pRequests)
     : evaluated_(false)
     , evaluatedValue_(std::numeric_limits<std::size_t>::max())
-    , classrooms_(pRequests->size(), ClassroomAddress::NoClassroom())
-    , lessons_(pRequests->size(), std::numeric_limits<std::size_t>::max())
+    , classrooms_()
+    , lessons_()
     , pRequests_(pRequests)
     , randomGenerator_(randomDevice())
     , buffer_(DEFAULT_BUFFER_SIZE)
 {
     assert(pRequests_ != nullptr);
-    for(std::size_t i = 0; i < pRequests_->size(); ++i)
-        Init(i);
+    std::tie(lessons_, classrooms_) = InitChromosomes(Requests());
 }
 
 void ScheduleIndividual::swap(ScheduleIndividual& other) noexcept
@@ -68,6 +221,7 @@ ScheduleIndividual& ScheduleIndividual::operator=(ScheduleIndividual&& other) no
     return *this;
 }
 
+const std::vector<SubjectRequest>& ScheduleIndividual::Requests() const { return *pRequests_; }
 const std::vector<ClassroomAddress>& ScheduleIndividual::Classrooms() const { return classrooms_; }
 const std::vector<std::size_t>& ScheduleIndividual::Lessons() const { return lessons_; }
 
@@ -82,8 +236,14 @@ void ScheduleIndividual::Mutate()
     assert(pRequests_->size() == classrooms_.size());
     assert(pRequests_->size() == lessons_.size());
 
-    evaluated_ = false;
-    Change();
+    std::uniform_int_distribution<std::size_t> requestsDistrib(0, pRequests_->size() - 1);
+    const std::size_t requestIndex = requestsDistrib(randomGenerator_);
+
+    std::uniform_int_distribution<std::size_t> headsOrTails(0, 1);
+    if(headsOrTails(randomGenerator_))
+        ChangeClassroom(requestIndex);
+    else
+        ChangeLesson(requestIndex);
 }
 
 std::size_t ScheduleIndividual::Evaluate() const
@@ -211,49 +371,49 @@ std::size_t ScheduleIndividual::Evaluate() const
         // evaluating summary lessons gaps for groups
         for(auto&& p : dayWindows[d])
         {
-        std::size_t prevLesson = 0;
-        for(std::size_t lessonNum = 0; lessonNum < MAX_LESSONS_PER_DAY; ++lessonNum)
-        {
-            if(p.second.at(lessonNum))
+            std::size_t prevLesson = 0;
+            for(std::size_t lessonNum = 0; lessonNum < MAX_LESSONS_PER_DAY; ++lessonNum)
             {
-                const std::size_t lessonsGap = lessonNum - prevLesson;
-                prevLesson = lessonNum;
+                if(p.second.at(lessonNum))
+                {
+                    const std::size_t lessonsGap = lessonNum - prevLesson;
+                    prevLesson = lessonNum;
 
-                if(lessonsGap > 1)
-                    evaluatedValue_ += lessonsGap * 3;
+                    if(lessonsGap > 1)
+                        evaluatedValue_ += lessonsGap * 3;
+                }
             }
-        }
         }
 
         // evaluating summary lessons gaps for professors
         for(auto&& p : professorsDayWindows[d])
         {
-        std::size_t prevLesson = 0;
-        for(std::size_t lessonNum = 0; lessonNum < MAX_LESSONS_PER_DAY; ++lessonNum)
-        {
-            if(p.second.at(lessonNum))
+            std::size_t prevLesson = 0;
+            for(std::size_t lessonNum = 0; lessonNum < MAX_LESSONS_PER_DAY; ++lessonNum)
             {
-                const std::size_t lessonsGap = lessonNum - prevLesson;
-                prevLesson = lessonNum;
+                if(p.second.at(lessonNum))
+                {
+                    const std::size_t lessonsGap = lessonNum - prevLesson;
+                    prevLesson = lessonNum;
 
-                if(lessonsGap > 1)
-                    evaluatedValue_ += lessonsGap * 2;
+                    if(lessonsGap > 1)
+                        evaluatedValue_ += lessonsGap * 2;
+                }
             }
-        }
         }
 
         // evaluating count transitions between buildings per day
         for(auto&& p : buildingsInDay[d])
         {
-        std::size_t prevBuilding = NO_BUILDING;
-        for(std::size_t lessonNum = 0; lessonNum < MAX_LESSONS_PER_DAY; ++lessonNum)
-        {
-            const auto currentBuilding = p.second.at(lessonNum);
-            if( !(currentBuilding == NO_BUILDING || prevBuilding == NO_BUILDING || currentBuilding == prevBuilding) )
-                evaluatedValue_ += 64;
+            std::size_t prevBuilding = NO_BUILDING;
+            for(std::size_t lessonNum = 0; lessonNum < MAX_LESSONS_PER_DAY; ++lessonNum)
+            {
+                const auto currentBuilding = p.second.at(lessonNum);
+                if( !(currentBuilding == NO_BUILDING || prevBuilding == NO_BUILDING || currentBuilding == prevBuilding) )
+                    evaluatedValue_ += 64;
 
-            prevBuilding = currentBuilding;
-        }
+                prevBuilding = currentBuilding;
+            }
         }
     }
 
@@ -263,111 +423,23 @@ std::size_t ScheduleIndividual::Evaluate() const
     return evaluatedValue_;
 }
 
-void ScheduleIndividual::Crossover(ScheduleIndividual& other,
-                                   std::size_t requestIndex)
+void ScheduleIndividual::Crossover(ScheduleIndividual& other)
 {
-    assert(!pRequests_->empty());
-    assert(pRequests_->size() == lessons_.size());
-    assert(classrooms_.size() == lessons_.size());
-    assert(other.classrooms_.size() == other.lessons_.size());
-    assert(other.lessons_.size() == lessons_.size());
-
-    if(ClassroomsIntersects(other.lessons_.at(requestIndex), other.classrooms_.at(requestIndex)) ||
-        other.ClassroomsIntersects(lessons_.at(requestIndex), classrooms_.at(requestIndex)))
-        return;
-
-    if(GroupsOrProfessorsIntersects(requestIndex, other.lessons_.at(requestIndex)) ||
-        other.GroupsOrProfessorsIntersects(requestIndex, lessons_.at(requestIndex)))
-        return;
-
-    evaluated_ = false;
-    other.evaluated_ = false;
-
-    std::swap(classrooms_.at(requestIndex), other.classrooms_.at(requestIndex));
-    std::swap(lessons_.at(requestIndex), other.lessons_.at(requestIndex));
-}
-
-bool ScheduleIndividual::GroupsOrProfessorsIntersects(std::size_t currentRequest,
-                                                      std::size_t currentLesson) const
-{
-    const auto& thisRequest = pRequests_->at(currentRequest);
-    auto it = std::find(lessons_.begin(), lessons_.end(), currentLesson);
-    while(it != lessons_.end())
+    std::uniform_int_distribution<std::size_t> requestsDist(0, pRequests_->size() - 1);
+    const auto requestIndex = requestsDist(randomGenerator_);
+    if(ReadyToCrossover(*this, other, requestIndex))
     {
-        const std::size_t requestIndex = std::distance(lessons_.begin(), it);
-        const auto& otherRequest = pRequests_->at(requestIndex);
-        if(thisRequest.Professor() == otherRequest.Professor() || set_intersects(thisRequest.Groups(), otherRequest.Groups()))
-        return true;
+        evaluated_ = false;
+        other.evaluated_ = false;
 
-        it = std::find(std::next(it), lessons_.end(), currentLesson);
+        // crossovering
+        std::swap(classrooms_.at(requestIndex), other.classrooms_.at(requestIndex));
+        std::swap(lessons_.at(requestIndex), other.lessons_.at(requestIndex));
     }
-
-    return false;
 }
 
-bool ScheduleIndividual::ClassroomsIntersects(std::size_t currentLesson,
-                                              const ClassroomAddress& currentClassroom) const
-{
-    auto it = std::find(classrooms_.begin(), classrooms_.end(), currentClassroom);
-    while(it != classrooms_.end())
-    {
-        const std::size_t requestIndex = std::distance(classrooms_.begin(), it);
-        const std::size_t otherLesson = lessons_.at(requestIndex);
-        if(currentLesson == otherLesson)
-        return true;
 
-        it = std::find(std::next(it), classrooms_.end(), currentClassroom);
-    }
-
-    return false;
-}
-
-void ScheduleIndividual::Init(std::size_t requestIndex)
-{
-    assert(pRequests_->size() == classrooms_.size());
-    assert(pRequests_->size() == lessons_.size());
-
-    const auto& request = pRequests_->at(requestIndex);
-    const auto& classrooms = request.Classrooms();
-
-    for(std::size_t dayLesson = 0; dayLesson < MAX_LESSONS_PER_DAY; ++dayLesson)
-    {
-        for(std::size_t day = 0; day < DAYS_IN_SCHEDULE; ++day)
-        {
-        if(!request.RequestedWeekDay(day))
-            continue;
-
-        const std::size_t scheduleLesson = day * MAX_LESSONS_PER_DAY + dayLesson;
-        if(!GroupsOrProfessorsIntersects(requestIndex, scheduleLesson))
-        {
-            for(auto&& classroom : classrooms)
-            {
-                if(!ClassroomsIntersects(scheduleLesson, classroom))
-                {
-                    classrooms_.at(requestIndex) = classroom;
-                    lessons_.at(requestIndex) = scheduleLesson;
-                    return;
-                }
-            }
-        }
-        }
-    }
-
-    assert(false);
-}
-
-void ScheduleIndividual::Change()
-{
-    assert(pRequests_->size() == classrooms_.size());
-    assert(pRequests_->size() == lessons_.size());
-
-    std::uniform_int_distribution<std::size_t> distrib(0, pRequests_->size() - 1);
-    const std::size_t requestIndex = distrib(randomGenerator_);
-    ChooseClassroom(requestIndex);
-    ChooseLesson(requestIndex);
-}
-
-void ScheduleIndividual::ChooseClassroom(std::size_t requestIndex)
+void ScheduleIndividual::ChangeClassroom(std::size_t requestIndex)
 {
     const auto& request = pRequests_->at(requestIndex);
     const auto& classrooms = request.Classrooms();
@@ -376,17 +448,20 @@ void ScheduleIndividual::ChooseClassroom(std::size_t requestIndex)
     auto scheduleClassroom = classrooms.at(classroomDistrib(randomGenerator_));
 
     std::size_t chooseClassroomTry = 0;
-    while(chooseClassroomTry < classrooms.size() && ClassroomsIntersects(lessons_.at(requestIndex), scheduleClassroom))
+    while(chooseClassroomTry < classrooms.size() && ClassroomsIntersects(lessons_, classrooms_, lessons_.at(requestIndex), scheduleClassroom))
     {
         scheduleClassroom = classrooms.at(classroomDistrib(randomGenerator_));
         ++chooseClassroomTry;
     }
 
     if(chooseClassroomTry < classrooms.size())
+    {
         classrooms_.at(requestIndex) = scheduleClassroom;
+        evaluated_ = false;
+    }
 }
 
-void ScheduleIndividual::ChooseLesson(std::size_t requestIndex)
+void ScheduleIndividual::ChangeLesson(std::size_t requestIndex)
 {
     std::uniform_int_distribution<std::size_t> lessonsDistrib(0, MAX_LESSONS_COUNT - 1);
     std::size_t scheduleLesson = lessonsDistrib(randomGenerator_);
@@ -396,51 +471,58 @@ void ScheduleIndividual::ChooseLesson(std::size_t requestIndex)
     std::size_t chooseLessonTry = 0;
     while(chooseLessonTry < MAX_LESSONS_COUNT && 
         (!request.RequestedWeekDay(scheduleLesson / MAX_LESSONS_PER_DAY) || 
-            ClassroomsIntersects(scheduleLesson, classrooms_.at(requestIndex)) || 
-            GroupsOrProfessorsIntersects(requestIndex, scheduleLesson)))
+            GroupsOrProfessorsOrClassroomsIntersects(*pRequests_, lessons_, classrooms_, requestIndex, scheduleLesson)))
     {
         scheduleLesson = lessonsDistrib(randomGenerator_);
         ++chooseLessonTry;
     }
 
     if(chooseLessonTry < MAX_LESSONS_COUNT)
+    {
         lessons_.at(requestIndex) = scheduleLesson;
+        evaluated_ = false;
+    }
 }
 
 
-void swap(ScheduleIndividual& lhs, ScheduleIndividual& rhs)
+void swap(ScheduleIndividual& lhs, ScheduleIndividual& rhs) { lhs.swap(rhs); }
+
+void Print(const ScheduleIndividual& individ)
 {
-    lhs.swap(rhs);
-}
+    const auto& requests = individ.Requests();
+    const auto& lessons = individ.Lessons();
+    const auto& classrooms = individ.Classrooms();
 
-void Print(const ScheduleIndividual& individ, const std::vector<SubjectRequest>& requests)
-{
-   const auto& lessons = individ.Lessons();
-   const auto& classrooms = individ.Classrooms();
+    for(std::size_t l = 0; l < MAX_LESSONS_COUNT; ++l)
+    {
+        std::cout << "Lesson " << l << ": ";
 
-   for(std::size_t l = 0; l < MAX_LESSONS_COUNT; ++l)
-   {
-      std::cout << "Lesson " << l << ": ";
+        auto it = std::find(lessons.begin(), lessons.end(), l);
+        if(it == lessons.end())
+        {
+            std::cout << '-';
+        }
+        else
+        {
+            while(it != lessons.end())
+            { 
+                const std::size_t r = std::distance(lessons.begin(), it);
+                const auto& request = requests.at(r);
+                std::cout << "[s:" << r <<
+                    ", p:" << request.Professor() <<
+                    ", c:(" << classrooms.at(r).Building << ", " << classrooms.at(r).Classroom << "), g: {";
 
-      auto it = std::find(lessons.begin(), lessons.end(), l);
-      if(it == lessons.end())
-      {
-         std::cout << '-';
-      }
-      else
-      {
-         while(it != lessons.end())
-         { 
-            const std::size_t r = std::distance(lessons.begin(), it);
-            const auto& request = requests.at(r);
-            std::cout << "[s:" << r << ", p:" << request.Professor() << ", c:(" << classrooms.at(r).Building << ", " << classrooms.at(r).Classroom << ")]";
+                for(auto&& g : request.Groups())
+                    std::cout << ' ' << g;
 
-            it = std::find(std::next(it), lessons.end(), l);
-         }
-      }
+                std::cout << " }]";
 
-      std::cout << '\n';
-   }
+                it = std::find(std::next(it), lessons.end(), l);
+            }
+        }
 
-   std::cout.flush();
+        std::cout << '\n';
+    }
+
+    std::cout.flush();
 }

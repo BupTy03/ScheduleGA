@@ -36,6 +36,7 @@ struct ClassroomAddress
         , Classroom(classroom)
     {}
 
+    static ClassroomAddress Any() { return ClassroomAddress(0, 0); }
     static ClassroomAddress NoClassroom()
     {
        return ClassroomAddress(std::numeric_limits<std::size_t>::max(),
