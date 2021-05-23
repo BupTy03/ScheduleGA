@@ -1,5 +1,6 @@
 #include "ScheduleGA.h"
 
+#include <iostream>
 #include <cassert>
 #include <execution>
 
@@ -55,13 +56,12 @@ ScheduleGAStatistics ScheduleGA::Start(const std::vector<SubjectRequest>& reques
     const auto beginTime = std::chrono::steady_clock::now();
 
     ScheduleGAStatistics result;
-    std::size_t prevEvaluated = std::numeric_limits<std::size_t>::max();
     for(std::size_t iteration = 0; iteration < IterationsCount(); ++iteration)
     {
         // mutate
-        std::for_each(std::execution::par_unseq, individuals_.begin(), individuals_.end(), [this](ScheduleIndividual& individual)
+        std::for_each(std::execution::par_unseq, individuals_.begin(), individuals_.end(), [mutationChance = mutationChance_](ScheduleIndividual& individual)
         {
-            if(individual.MutationProbability() <= MutationChance())
+            if(individual.MutationProbability() <= mutationChance)
             {
                 individual.Mutate();
                 individual.Evaluate();
@@ -69,29 +69,20 @@ ScheduleGAStatistics ScheduleGA::Start(const std::vector<SubjectRequest>& reques
         });
 
         // select best
-        std::partial_sort(individuals_.begin(), individuals_.begin() + SelectionCount(), individuals_.end(), ScheduleIndividualLess());
-        const std::size_t currentBestEvaluated = individuals_.front().Evaluate();
+        std::nth_element(individuals_.begin(), individuals_.begin() + SelectionCount(), individuals_.end(), ScheduleIndividualLess());
 
-        //std::cout << "Iteration: " << iteration << "; Best: " << currentBestEvaluated << '\n';
-        if(currentBestEvaluated < prevEvaluated)
-            result.Iterations = iteration;
-
-        prevEvaluated = currentBestEvaluated;
+        //std::cout << "Iteration: " << iteration << "; Best: " << std::min_element(individuals_.begin(), individuals_.begin() + SelectionCount(), ScheduleIndividualLess())->Evaluate() << '\n';
 
         // crossover
         for(std::size_t i = 0; i < CrossoverCount(); ++i)
         {
-            auto& firstInd = individuals_.at(selectionBestDist(randGen));
-            auto& secondInd = individuals_.at(individualsDist(randGen));
-
+            ScheduleIndividual& firstInd = individuals_.at(selectionBestDist(randGen));
+            ScheduleIndividual& secondInd = individuals_.at(individualsDist(randGen));
             firstInd.Crossover(secondInd);
-            firstInd.Evaluate();
-            secondInd.Evaluate();
         }
 
         // natural selection
         std::nth_element(individuals_.begin(), individuals_.end() - SelectionCount(), individuals_.end(), ScheduleIndividualLess());
-        std::sort(individuals_.end() - SelectionCount(), individuals_.end(), ScheduleIndividualLess());
         std::copy_n(individuals_.begin(), SelectionCount(), individuals_.end() - SelectionCount());
     }
 

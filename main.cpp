@@ -192,7 +192,6 @@ int main()
 	Print(bestIndividual);
 	std::cout << "Best: " << bestIndividual.Evaluate() << '\n';
 	std::cout << "Time: " << std::chrono::duration_cast<std::chrono::seconds>(stat.Time).count() << "s.\n";
-	std::cout << "Iterations: " << stat.Iterations << '\n';
 	std::cout.flush();
 	return 0;
 }

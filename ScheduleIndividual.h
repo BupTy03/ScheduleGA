@@ -76,7 +76,7 @@ private:
 
 struct ScheduleIndividualLess
 {
-    bool operator()(const ScheduleIndividual& lhs, const ScheduleIndividual& rhs) const
+    bool operator()(const ScheduleIndividual& lhs, const ScheduleIndividual& rhs) const noexcept
     {
         return lhs.Evaluate() < rhs.Evaluate();
     }

@@ -9,7 +9,6 @@
 struct ScheduleGAStatistics
 {
    std::chrono::milliseconds Time;
-   std::size_t Iterations;
 };
 
 class ScheduleGA
