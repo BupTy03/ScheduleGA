@@ -19,15 +19,16 @@ static void FindOptimalIterationsCount(const std::vector<SubjectRequest>& reques
 		std::array<std::size_t, 100> attempts = {};
 		for(auto& a : attempts)
 		{
-			ScheduleGA algo;
-			algo.IndividualsCount(100)
-				.SelectionCount(36)
-				.CrossoverCount(22)
-				.MutationChance(49)
-				.IterationsCount(iterationsCount)
-				.Start(requests);
+			ScheduleGAParams params;
+			params.IndividualsCount = 100;
+			params.IterationsCount = iterationsCount;
+			params.SelectionCount = 36;
+			params.CrossoverCount = 22;
+			params.MutationChance = 49;
 
-			a = algo.Best().Evaluate();
+			ScheduleGA algo(params);
+			algo.Start(requests);
+			a = algo.Individuals().front().Evaluate();
 		}
 
 		std::sort(attempts.begin(), attempts.end());
@@ -83,15 +84,16 @@ static void FindOptimalParams(const std::vector<SubjectRequest>& requests, std::
 				std::array<std::size_t, 100> attempts = {};
 				std::for_each(std::execution::par, attempts.begin(), attempts.end(), [&](auto& a)
 				{
-					ScheduleGA algo;
-					algo.IndividualsCount(100)
-						.SelectionCount(selectionCount)
-						.CrossoverCount(crossoverCount)
-						.MutationChance(mutationChance)
-						.IterationsCount(100)
-						.Start(requests);
+					ScheduleGAParams params;
+					params.IndividualsCount = 100;
+					params.IterationsCount = 100;
+					params.SelectionCount = selectionCount;
+					params.CrossoverCount = crossoverCount;
+					params.MutationChance = mutationChance;
 
-					a = algo.Best().Evaluate();
+					ScheduleGA algo(params);
+					algo.Start(requests);
+					a = algo.Individuals().front().Evaluate();
 				});
 
 				std::sort(attempts.begin(), attempts.end());
@@ -180,18 +182,20 @@ int main()
 	//FindOptimalParams(requests);
 	//FindOptimalIterationsCount(requests);
 
-	ScheduleGA algo;
-	const auto stat = algo.IndividualsCount(1000)
-		.IterationsCount(1100)
-		.SelectionCount(360)
-		.CrossoverCount(220)
-		.MutationChance(49)
-		.Start(requests);
+	ScheduleGAParams params;
+	params.IndividualsCount = 1000;
+    params.IterationsCount = 1100;
+    params.SelectionCount = 360;
+    params.CrossoverCount = 220;
+    params.MutationChance = 49;
 
-	const auto& bestIndividual = algo.Best();
+	ScheduleGA algo(params);
+	const auto stat = algo.Start(requests);
+
+	const auto& bestIndividual = algo.Individuals().front();
 	Print(bestIndividual);
 	std::cout << "Best: " << bestIndividual.Evaluate() << '\n';
-	std::cout << "Time: " << std::chrono::duration_cast<std::chrono::seconds>(stat.Time).count() << "s.\n";
+	std::cout << "Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(stat.Time).count() << "ms.\n";
 	std::cout.flush();
 	return 0;
 }

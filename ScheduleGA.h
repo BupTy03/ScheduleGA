@@ -11,34 +11,30 @@ struct ScheduleGAStatistics
    std::chrono::milliseconds Time;
 };
 
+
+struct ScheduleGAParams
+{
+    std::size_t IndividualsCount = 0;
+    std::size_t IterationsCount = 0;
+    std::size_t SelectionCount = 0;
+    std::size_t CrossoverCount = 0;
+    std::size_t MutationChance = 0;
+};
+
+
 class ScheduleGA
 {
 public:
     ScheduleGA();
+    explicit ScheduleGA(const ScheduleGAParams& params);
 
-    ScheduleGA& IndividualsCount(std::size_t individuals);
-    std::size_t IndividualsCount() const;
+    static ScheduleGAParams DefaultParams();
+    const ScheduleGAParams& Params() const;
 
-    ScheduleGA& IterationsCount(std::size_t iterations);
-    std::size_t IterationsCount() const;
-
-    ScheduleGA& SelectionCount(std::size_t selectionCount);
-    std::size_t SelectionCount() const;
-
-    ScheduleGA& CrossoverCount(std::size_t crossoverCount);
-    std::size_t CrossoverCount() const;
-
-    ScheduleGA& MutationChance(std::size_t mutationChance);
-    std::size_t MutationChance() const;
-
-    const ScheduleIndividual& Best() const;
     ScheduleGAStatistics Start(const std::vector<SubjectRequest>& requests);
+    const std::vector<ScheduleIndividual>& Individuals() const;
 
 private:
-    std::size_t individualsCount_;
-    std::size_t iterationsCount_;
-    std::size_t selectionCount_;
-    std::size_t crossoverCount_;
-    std::size_t mutationChance_;
+    ScheduleGAParams params_;
     std::vector<ScheduleIndividual> individuals_;
 };

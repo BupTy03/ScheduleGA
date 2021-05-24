@@ -340,13 +340,12 @@ std::size_t EvaluateSchedule(LinearAllocatorBufferSpan& bufferSpan,
 
 ScheduleIndividual::ScheduleIndividual(std::random_device& randomDevice,
                                        const std::vector<SubjectRequest>* pRequests)
-    : evaluated_(false)
-    , evaluatedValue_(std::numeric_limits<std::size_t>::max())
+    : pRequests_(pRequests)
+    , evaluatedValue_(NOT_EVALUATED)
     , classrooms_()
     , lessons_()
-    , pRequests_(pRequests)
-    , randomGenerator_(randomDevice())
     , buffer_(DEFAULT_BUFFER_SIZE)
+    , randomGenerator_(randomDevice())
 {
     assert(pRequests_ != nullptr);
     std::tie(lessons_, classrooms_) = InitChromosomes(Requests());
@@ -354,20 +353,18 @@ ScheduleIndividual::ScheduleIndividual(std::random_device& randomDevice,
 
 void ScheduleIndividual::swap(ScheduleIndividual& other) noexcept
 {
-    std::swap(evaluated_, other.evaluated_);
     std::swap(evaluatedValue_, other.evaluatedValue_);
     std::swap(classrooms_, other.classrooms_);
     std::swap(lessons_, other.lessons_);
 }
 
 ScheduleIndividual::ScheduleIndividual(const ScheduleIndividual& other)
-    : evaluated_(other.evaluated_)
+    : pRequests_(other.pRequests_)
     , evaluatedValue_(other.evaluatedValue_)
     , classrooms_(other.classrooms_)
     , lessons_(other.lessons_)
-    , pRequests_(other.pRequests_)
+    , buffer_(other.buffer_.size())
     , randomGenerator_(other.randomGenerator_)
-    , buffer_(DEFAULT_BUFFER_SIZE)
 {
 }
 
@@ -379,13 +376,12 @@ ScheduleIndividual& ScheduleIndividual::operator=(const ScheduleIndividual& othe
 }
 
 ScheduleIndividual::ScheduleIndividual(ScheduleIndividual&& other) noexcept
-    : evaluated_(other.evaluated_)
+    : pRequests_(other.pRequests_)
     , evaluatedValue_(other.evaluatedValue_)
     , classrooms_(std::move(other.classrooms_))
     , lessons_(std::move(other.lessons_))
-    , pRequests_(other.pRequests_)
+    , buffer_(other.buffer_.size())
     , randomGenerator_(other.randomGenerator_)
-    , buffer_(DEFAULT_BUFFER_SIZE)
 {
 }
 
@@ -422,13 +418,12 @@ void ScheduleIndividual::Mutate()
 
 std::size_t ScheduleIndividual::Evaluate() const
 {
-    if(evaluated_)
+    if(evaluatedValue_ != NOT_EVALUATED)
         return evaluatedValue_;
 
     LinearAllocatorBufferSpan bufferSpan(buffer_.data(), buffer_.size());
     
     evaluatedValue_ = EvaluateSchedule(bufferSpan, *pRequests_, lessons_, classrooms_);
-    evaluated_ = true;
 
     buffer_.resize(std::max(bufferSpan.peak, buffer_.size()));
     return evaluatedValue_;
@@ -440,8 +435,8 @@ void ScheduleIndividual::Crossover(ScheduleIndividual& other)
     const auto requestIndex = requestsDist(randomGenerator_);
     if(ReadyToCrossover(*this, other, requestIndex))
     {
-        evaluated_ = false;
-        other.evaluated_ = false;
+        evaluatedValue_ = NOT_EVALUATED;
+        other.evaluatedValue_ = NOT_EVALUATED;
 
         // crossovering
         std::swap(classrooms_.at(requestIndex), other.classrooms_.at(requestIndex));
@@ -468,7 +463,7 @@ void ScheduleIndividual::ChangeClassroom(std::size_t requestIndex)
     if(chooseClassroomTry < classrooms.size())
     {
         classrooms_.at(requestIndex) = scheduleClassroom;
-        evaluated_ = false;
+        evaluatedValue_ = NOT_EVALUATED;
     }
 }
 
@@ -491,7 +486,7 @@ void ScheduleIndividual::ChangeLesson(std::size_t requestIndex)
     if(chooseLessonTry < MAX_LESSONS_COUNT)
     {
         lessons_.at(requestIndex) = scheduleLesson;
-        evaluated_ = false;
+        evaluatedValue_ = NOT_EVALUATED;
     }
 }
 

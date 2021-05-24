@@ -38,48 +38,76 @@ std::size_t EvaluateSchedule(LinearAllocatorBufferSpan& bufferSpan,
 
 class ScheduleIndividual
 {
-   static constexpr std::size_t DEFAULT_BUFFER_SIZE = 1024;
+
+    static constexpr std::size_t DEFAULT_BUFFER_SIZE = 1024;
+    static constexpr std::size_t NOT_EVALUATED = std::numeric_limits<std::size_t>::max();
 public:
-   explicit ScheduleIndividual(std::random_device& randomDevice,
-                               const std::vector<SubjectRequest>* pRequests);
-   void swap(ScheduleIndividual& other) noexcept;
+    explicit ScheduleIndividual(std::random_device& randomDevice,
+                                const std::vector<SubjectRequest>* pRequests);
+    void swap(ScheduleIndividual& other) noexcept;
 
-   ScheduleIndividual(const ScheduleIndividual& other);
-   ScheduleIndividual& operator=(const ScheduleIndividual& other);
+    ScheduleIndividual(const ScheduleIndividual& other);
+    ScheduleIndividual& operator=(const ScheduleIndividual& other);
 
-   ScheduleIndividual(ScheduleIndividual&& other) noexcept;
-   ScheduleIndividual& operator=(ScheduleIndividual&& other) noexcept;
+    ScheduleIndividual(ScheduleIndividual&& other) noexcept;
+    ScheduleIndividual& operator=(ScheduleIndividual&& other) noexcept;
 
-   const std::vector<SubjectRequest>& Requests() const;
-   const std::vector<ClassroomAddress>& Classrooms() const;
-   const std::vector<std::size_t>& Lessons() const;
+    const std::vector<SubjectRequest>& Requests() const;
+    const std::vector<ClassroomAddress>& Classrooms() const;
+    const std::vector<std::size_t>& Lessons() const;
 
-   std::size_t MutationProbability() const;
-   void Mutate();
-   std::size_t Evaluate() const;
-   void Crossover(ScheduleIndividual& other);
-
-private:
-   void ChangeClassroom(std::size_t requestIndex);
-   void ChangeLesson(std::size_t requestIndex);
+    std::size_t MutationProbability() const;
+    void Mutate();
+    std::size_t Evaluate() const;
+    void Crossover(ScheduleIndividual& other);
 
 private:
-   mutable bool evaluated_;
-   mutable std::size_t evaluatedValue_;
-   std::vector<ClassroomAddress> classrooms_;
-   std::vector<std::size_t> lessons_;
+    void ChangeClassroom(std::size_t requestIndex);
+    void ChangeLesson(std::size_t requestIndex);
 
-   const std::vector<SubjectRequest>* pRequests_;
-   mutable std::mt19937 randomGenerator_;
-   mutable std::vector<std::uint8_t> buffer_;
+private:
+    const std::vector<SubjectRequest>* pRequests_;
+    mutable std::size_t evaluatedValue_;
+
+    std::vector<ClassroomAddress> classrooms_;
+    std::vector<std::size_t> lessons_;
+
+    mutable std::vector<std::uint8_t> buffer_;
+    mutable std::mt19937 randomGenerator_;
 };
 
 struct ScheduleIndividualLess
 {
-    bool operator()(const ScheduleIndividual& lhs, const ScheduleIndividual& rhs) const noexcept
+    bool operator()(const ScheduleIndividual& lhs, const ScheduleIndividual& rhs) const
     {
         return lhs.Evaluate() < rhs.Evaluate();
     }
+};
+
+struct ScheduleIndividualEvaluator
+{
+    void operator()(ScheduleIndividual& individual) const
+    {
+        individual.Evaluate();
+    }
+};
+
+struct ScheduleIndividualMutator
+{
+    explicit ScheduleIndividualMutator(std::size_t mutationChance)
+        : MutationChance(mutationChance)
+    { }
+
+    void operator()(ScheduleIndividual& individual) const
+    {
+        if(individual.MutationProbability() <= MutationChance)
+        {
+            individual.Mutate();
+            individual.Evaluate();
+        }
+    }
+
+    std::size_t MutationChance;
 };
 
 

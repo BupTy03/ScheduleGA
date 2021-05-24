@@ -81,6 +81,19 @@ public:
    std::size_t Complexity() const;
    std::size_t Professor() const;
 
+   friend bool operator==(const SubjectRequest& lhs, const SubjectRequest& rhs)
+   {
+       return lhs.professor_ == rhs.professor_ &&
+       lhs.complexity_ == rhs.complexity_ &&
+       lhs.weekDays_ == rhs.weekDays_ &&
+       lhs.groups_ == rhs.groups_ &&
+       lhs.classrooms_ == rhs.classrooms_;
+   }
+   friend bool operator!=(const SubjectRequest& lhs, const SubjectRequest& rhs)
+   {
+       return !(lhs == rhs);
+   }
+
 private:
     std::size_t professor_;
     std::size_t complexity_;
