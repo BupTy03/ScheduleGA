@@ -57,7 +57,7 @@ ScheduleGAStatistics ScheduleGA::Start(const std::vector<SubjectRequest>& reques
 
     const auto beginTime = std::chrono::steady_clock::now();
 
-    ScheduleGAStatistics result;
+    ScheduleGAStatistics result{};
     for(std::size_t iteration = 0; iteration < params_.IterationsCount; ++iteration)
     {
         // mutate
