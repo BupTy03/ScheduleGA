@@ -29,10 +29,9 @@ public:
     explicit ScheduleGA(const ScheduleGAParams& params);
 
     static ScheduleGAParams DefaultParams();
-    const ScheduleGAParams& Params() const;
+    const ScheduleGAParams& Params() const { return params_; }
 
-    ScheduleGAStatistics Start(const std::vector<SubjectRequest>& requests,
-                               const std::vector<SubjectWithAddress>& lockedLesson);
+    ScheduleGAStatistics Start(const ScheduleData& scheduleData);
     const std::vector<ScheduleIndividual>& Individuals() const;
 
 private:

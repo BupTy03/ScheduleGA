@@ -26,7 +26,7 @@ static void FindOptimalIterationsCount(const std::vector<SubjectRequest>& reques
 			params.MutationChance = 49;
 
 			ScheduleGA algo(params);
-			algo.Start(requests, {});
+			algo.Start(ScheduleData(requests, {}));
 			a = algo.Individuals().front().Evaluate();
 		}
 
@@ -91,7 +91,7 @@ static void FindOptimalParams(const std::vector<SubjectRequest>& requests, std::
 					params.MutationChance = mutationChance;
 
 					ScheduleGA algo(params);
-					algo.Start(requests, {});
+					algo.Start(ScheduleData(requests, {}));
 					a = algo.Individuals().front().Evaluate();
 				});
 
@@ -184,17 +184,18 @@ int main()
 	//FindOptimalIterationsCount(requests);
 
 	ScheduleGAParams params;
-	params.IndividualsCount = 100;
+	params.IndividualsCount = 1000;
     params.IterationsCount = 1100;
-    params.SelectionCount = 36;
-    params.CrossoverCount = 22;
+    params.SelectionCount = 360;
+    params.CrossoverCount = 220;
     params.MutationChance = 49;
 
 	ScheduleGA algo(params);
-	const auto stat = algo.Start(requests, lockedLessons);
+	const ScheduleData data(requests, lockedLessons);
+	const auto stat = algo.Start(data);
 
 	const auto& bestIndividual = algo.Individuals().front();
-	Print(bestIndividual);
+	Print(bestIndividual, data);
 	std::cout << "Best: " << bestIndividual.Evaluate() << '\n';
 	std::cout << "Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(stat.Time).count() << "ms.\n";
 	std::cout.flush();

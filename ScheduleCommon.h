@@ -1,6 +1,7 @@
 #pragma once
 #include <limits>
 #include <vector>
+#include <cassert>
 
 
 constexpr auto MAX_LESSONS_PER_DAY = 7;
@@ -106,6 +107,31 @@ private:
 };
 
 
+struct SubjectRequestIDLess
+{
+    bool operator()(const SubjectRequest& lhs, const SubjectRequest& rhs) const
+    {
+        return lhs.ID() < rhs.ID();
+    }
+    bool operator()(const SubjectRequest& lhs, std::size_t rhsID) const
+    {
+        return lhs.ID() < rhsID;
+    }
+    bool operator()(std::size_t lhsID, const SubjectRequest& rhs) const
+    {
+        return lhsID < rhs.ID();
+    }
+};
+
+struct SubjectRequestIDEqual
+{
+    bool operator()(const SubjectRequest& lhs, const SubjectRequest& rhs) const
+    {
+        return lhs.ID() == rhs.ID();
+    }
+};
+
+
 struct SubjectWithAddress
 {
     SubjectWithAddress() = default;
@@ -128,7 +154,7 @@ struct SubjectWithAddress
     std::size_t Address = 0;
 };
 
-struct SubjectWithAddressLess
+struct SubjectWithAddressLessByAddress
 {
     bool operator()(const SubjectWithAddress& lhs, const SubjectWithAddress& rhs) const
     {
@@ -145,3 +171,130 @@ struct SubjectWithAddressLess
         return lhsAddress < rhs.Address;
     }
 };
+
+
+class ScheduleData
+{
+public:
+    ScheduleData() = default;
+    explicit ScheduleData(std::vector<SubjectRequest> subjectRequests,
+                          std::vector<SubjectWithAddress> lockedLessons);
+
+    const std::vector<SubjectRequest>& SubjectRequests() const;
+    const SubjectRequest& SubjectRequestAtID(std::size_t subjectRequestID) const;
+
+    const std::vector<SubjectWithAddress>& LockedLessons() const;
+    bool LessonIsLocked(std::size_t lessonAddress) const;
+    bool RequestHasLockedLesson(const SubjectRequest& request) const;
+
+private:
+    std::vector<SubjectRequest> subjectRequests_;
+    std::vector<SubjectWithAddress> lockedLessons_;
+};
+
+
+constexpr bool IsLateScheduleLessonInSaturday(std::size_t l)
+{
+    static_assert(MAX_LESSONS_COUNT == 84, "re-fill lateSaturdayLessonsTable");
+    assert(l < MAX_LESSONS_COUNT);
+
+    constexpr bool lateSaturdayLessonsTable[MAX_LESSONS_COUNT] = {
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+        false,
+
+        false,
+        false,
+        false,
+        false,
+        true,
+        true,
+        true,
+    };
+
+    return lateSaturdayLessonsTable[l];
+}
