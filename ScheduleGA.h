@@ -14,11 +14,11 @@ struct ScheduleGAStatistics
 
 struct ScheduleGAParams
 {
-    std::size_t IndividualsCount = 0;
-    std::size_t IterationsCount = 0;
-    std::size_t SelectionCount = 0;
-    std::size_t CrossoverCount = 0;
-    std::size_t MutationChance = 0;
+    int IndividualsCount = 0;
+    int IterationsCount = 0;
+    int SelectionCount = 0;
+    int CrossoverCount = 0;
+    int MutationChance = 0;
 };
 
 

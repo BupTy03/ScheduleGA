@@ -26,18 +26,31 @@ struct FirstLess
    }
 };
 
+template<class InputIt1, class InputIt2>
+bool set_intersects(InputIt1 first1, InputIt1 last1,
+                    InputIt2 first2, InputIt2 last2)
+{
+    while (first1 != last1 && first2 != last2)
+    {
+        if (*first1 < *first2)
+        {
+            ++first1;
+        }
+        else
+        {
+            if (!(*first2 < *first1))
+                return true;
+
+            ++first2;
+        }
+    }
+    return false;
+}
 
 template<class SortedRange1, class SortedRange2>
 bool set_intersects(const SortedRange1& r1, const SortedRange2& r2)
 {
-   for(const auto& e : r1)
-   {
-      auto it = std::lower_bound(std::begin(r2), std::end(r2), e);
-      if(it != std::end(r2) && !(e < *it))
-         return true;
-   }
-
-   return false;
+    return set_intersects(std::begin(r1), std::end(r1), std::begin(r2), std::end(r2));
 }
 
 
