@@ -6,7 +6,6 @@
 #include <algorithm>
 
 
-
 static void FindOptimalIterationsCount(const std::vector<SubjectRequest>& requests, std::ostream& os = std::cout)
 {
 	std::array<std::size_t, 1000> results = {};
@@ -27,7 +26,7 @@ static void FindOptimalIterationsCount(const std::vector<SubjectRequest>& reques
 			params.MutationChance = 49;
 
 			ScheduleGA algo(params);
-			algo.Start(requests);
+			algo.Start(requests, {});
 			a = algo.Individuals().front().Evaluate();
 		}
 
@@ -92,7 +91,7 @@ static void FindOptimalParams(const std::vector<SubjectRequest>& requests, std::
 					params.MutationChance = mutationChance;
 
 					ScheduleGA algo(params);
-					algo.Start(requests);
+					algo.Start(requests, {});
 					a = algo.Individuals().front().Evaluate();
 				});
 
@@ -159,38 +158,40 @@ int main()
 	std::vector<bool> weekDays = {false, true, true, true, false, false, false, true, true, true, true, false};
 
 	std::vector<SubjectRequest> requests = {
-		SubjectRequest(0, 1, weekDays, {1}, {ClassroomAddress(0, 101), ClassroomAddress(0, 102)}),
-		SubjectRequest(2, 2, weekDays, {1, 2}, {ClassroomAddress(0, 104), ClassroomAddress(0, 105)}),
-		SubjectRequest(4, 4, weekDays, {3}, {ClassroomAddress(0, 101)}),
-		SubjectRequest(6, 3, weekDays, {4}, {ClassroomAddress(0, 105), ClassroomAddress(0, 107)}),
-		SubjectRequest(0, 1, weekDays, {1}, {ClassroomAddress(0, 101), ClassroomAddress(0, 103)}),
-		SubjectRequest(2, 2, weekDays, {1, 2}, {ClassroomAddress(1, 104), ClassroomAddress(1, 105)}),
-		SubjectRequest(4, 4, weekDays, {3}, {ClassroomAddress(0, 101), ClassroomAddress(0, 110)}),
-		SubjectRequest(6, 1, weekDays, {4}, {ClassroomAddress(0, 105), ClassroomAddress(0, 107)}),
-		SubjectRequest(0, 1, weekDays, {1}, {ClassroomAddress(0, 101), ClassroomAddress(0, 103)}),
-		SubjectRequest(2, 3, weekDays, {1, 2}, {ClassroomAddress(0, 104), ClassroomAddress(0, 105)}),
-		SubjectRequest(4, 2, weekDays, {3}, {ClassroomAddress(0, 101), ClassroomAddress(0, 120)}),
-		SubjectRequest(6, 1, weekDays, {4}, {ClassroomAddress(0, 105), ClassroomAddress(0, 109)})
+		SubjectRequest(0, 0, 1, weekDays, {1}, {ClassroomAddress(0, 101), ClassroomAddress(0, 102)}),
+		SubjectRequest(1, 2, 2, weekDays, {1, 2}, {ClassroomAddress(0, 104), ClassroomAddress(0, 105)}),
+		SubjectRequest(2, 4, 4, weekDays, {3}, {ClassroomAddress(0, 101)}),
+		SubjectRequest(3, 6, 3, weekDays, {4}, {ClassroomAddress(0, 105), ClassroomAddress(0, 107)}),
+		SubjectRequest(4, 0, 1, weekDays, {1}, {ClassroomAddress(0, 101), ClassroomAddress(0, 103)}),
+		SubjectRequest(5, 2, 2, weekDays, {1, 2}, {ClassroomAddress(1, 104), ClassroomAddress(1, 105)}),
+		SubjectRequest(6, 4, 4, weekDays, {3}, {ClassroomAddress(0, 101), ClassroomAddress(0, 110)}),
+		SubjectRequest(7, 6, 1, weekDays, {4}, {ClassroomAddress(0, 105), ClassroomAddress(0, 107)}),
+		SubjectRequest(8, 0, 1, weekDays, {1}, {ClassroomAddress(0, 101), ClassroomAddress(0, 103)}),
+		SubjectRequest(9, 2, 3, weekDays, {1, 2}, {ClassroomAddress(0, 104), ClassroomAddress(0, 105)}),
+		SubjectRequest(10, 4, 2, weekDays, {3}, {ClassroomAddress(0, 101), ClassroomAddress(0, 120)}),
+		SubjectRequest(11, 6, 1, weekDays, {4}, {ClassroomAddress(0, 105), ClassroomAddress(0, 109)})
 	};
 
-	const auto tmp = requests;
-	requests.insert(requests.end(), tmp.begin(), tmp.end());
-	requests.insert(requests.end(), tmp.begin(), tmp.end());
-	requests.insert(requests.end(), tmp.begin(), tmp.end());
-	requests.insert(requests.end(), tmp.begin(), tmp.end());
+	std::vector<SubjectWithAddress> lockedLessons = {
+		SubjectWithAddress(0, 0),
+		SubjectWithAddress(1, 1),
+		SubjectWithAddress(2, 2),
+		SubjectWithAddress(3, 3),
+		SubjectWithAddress(4, 4)
+	};
 
 	//FindOptimalParams(requests);
 	//FindOptimalIterationsCount(requests);
 
 	ScheduleGAParams params;
-	params.IndividualsCount = 1000;
+	params.IndividualsCount = 100;
     params.IterationsCount = 1100;
-    params.SelectionCount = 360;
-    params.CrossoverCount = 220;
+    params.SelectionCount = 36;
+    params.CrossoverCount = 22;
     params.MutationChance = 49;
 
 	ScheduleGA algo(params);
-	const auto stat = algo.Start(requests);
+	const auto stat = algo.Start(requests, lockedLessons);
 
 	const auto& bestIndividual = algo.Individuals().front();
 	Print(bestIndividual);

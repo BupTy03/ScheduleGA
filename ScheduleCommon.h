@@ -65,7 +65,8 @@ struct ClassroomAddress
 class SubjectRequest
 {
 public:
-   explicit SubjectRequest(std::size_t professor,
+   explicit SubjectRequest(std::size_t id,
+                           std::size_t professor,
                            std::size_t complexity,
                            std::vector<bool> weekDays,
                            std::vector<std::size_t> groups,
@@ -78,6 +79,7 @@ public:
    const std::vector<std::size_t>& Groups() const;
    const std::vector<ClassroomAddress>& Classrooms() const;
 
+   std::size_t ID() const;
    std::size_t Complexity() const;
    std::size_t Professor() const;
 
@@ -95,9 +97,51 @@ public:
    }
 
 private:
+    std::size_t id_;
     std::size_t professor_;
     std::size_t complexity_;
     std::vector<bool> weekDays_;
     std::vector<std::size_t> groups_;
     std::vector<ClassroomAddress> classrooms_;
+};
+
+
+struct SubjectWithAddress
+{
+    SubjectWithAddress() = default;
+    explicit SubjectWithAddress(std::size_t SubjectRequestID, std::size_t Address)
+        : SubjectRequestID(SubjectRequestID)
+        , Address(Address)
+    {}
+
+    friend bool operator==(const SubjectWithAddress& lhs, const SubjectWithAddress& rhs)
+    {
+        return lhs.SubjectRequestID == rhs.SubjectRequestID && lhs.Address == rhs.Address;
+    }
+
+    friend bool operator!=(const SubjectWithAddress& lhs, const SubjectWithAddress& rhs)
+    {
+        return !(lhs == rhs);
+    }
+
+    std::size_t SubjectRequestID = 0;
+    std::size_t Address = 0;
+};
+
+struct SubjectWithAddressLess
+{
+    bool operator()(const SubjectWithAddress& lhs, const SubjectWithAddress& rhs) const
+    {
+        return lhs.Address < rhs.Address;
+    }
+
+    bool operator()(const SubjectWithAddress& lhs, std::size_t rhsAddress) const
+    {
+        return lhs.Address < rhsAddress;
+    }
+
+    bool operator()(std::size_t lhsAddress, const SubjectWithAddress& rhs) const
+    {
+        return lhsAddress < rhs.Address;
+    }
 };

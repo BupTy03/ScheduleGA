@@ -23,12 +23,20 @@ bool ClassroomsIntersects(const std::vector<std::size_t>& lessons,
                           std::size_t currentLesson,
                           const ClassroomAddress& currentClassroom);
 
+bool LessonIsLocked(const std::vector<SubjectWithAddress>& lockedLessons,
+                    std::size_t lesson);
+
+bool RequestHasLockedLesson(const std::vector<SubjectWithAddress>& lockedLessons,
+                            const SubjectRequest& request);
+
 void InitChromosomes(std::vector<std::size_t>& lessons,
                      std::vector<ClassroomAddress>& classrooms,
                      const std::vector<SubjectRequest>& requests,
+                     const std::vector<SubjectWithAddress>& lockedLessons,
                      std::size_t requestIndex);
 
-std::tuple<std::vector<std::size_t>, std::vector<ClassroomAddress>> InitChromosomes(const std::vector<SubjectRequest>& requests);
+std::tuple<std::vector<std::size_t>, std::vector<ClassroomAddress>> InitChromosomes(const std::vector<SubjectRequest>& requests,
+                                                                                    const std::vector<SubjectWithAddress>& lockedLessons);
 
 std::size_t EvaluateSchedule(LinearAllocatorBufferSpan& bufferSpan,
                              const std::vector<SubjectRequest>& requests,
@@ -43,7 +51,8 @@ class ScheduleIndividual
     static constexpr std::size_t NOT_EVALUATED = std::numeric_limits<std::size_t>::max();
 public:
     explicit ScheduleIndividual(std::random_device& randomDevice,
-                                const std::vector<SubjectRequest>* pRequests);
+                                const std::vector<SubjectRequest>* pRequests,
+                                const std::vector<SubjectWithAddress>* pLocked);
     void swap(ScheduleIndividual& other) noexcept;
 
     ScheduleIndividual(const ScheduleIndividual& other);
@@ -67,6 +76,7 @@ private:
 
 private:
     const std::vector<SubjectRequest>* pRequests_;
+    const std::vector<SubjectWithAddress>* pLocked_;
     mutable std::size_t evaluatedValue_;
 
     std::vector<ClassroomAddress> classrooms_;

@@ -31,7 +31,8 @@ public:
     static ScheduleGAParams DefaultParams();
     const ScheduleGAParams& Params() const;
 
-    ScheduleGAStatistics Start(const std::vector<SubjectRequest>& requests);
+    ScheduleGAStatistics Start(const std::vector<SubjectRequest>& requests,
+                               const std::vector<SubjectWithAddress>& lockedLesson);
     const std::vector<ScheduleIndividual>& Individuals() const;
 
 private:

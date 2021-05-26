@@ -4,12 +4,14 @@
 #include <algorithm>
 
 
-SubjectRequest::SubjectRequest(std::size_t professor,
+SubjectRequest::SubjectRequest(std::size_t id,
+                               std::size_t professor,
                                std::size_t complexity,
                                std::vector<bool> weekDays,
                                std::vector<std::size_t> groups,
                                std::vector<ClassroomAddress> classrooms)
-    : professor_(professor)
+    : id_(id)
+    , professor_(professor)
     , complexity_(complexity)
     , weekDays_(std::move(weekDays))
     , groups_(std::move(groups))
@@ -41,5 +43,6 @@ bool SubjectRequest::RequestedGroup(std::size_t g) const
 bool SubjectRequest::RequestedWeekDay(std::size_t d) const { return weekDays_.at(d); }
 const std::vector<std::size_t>& SubjectRequest::Groups() const { return groups_; }
 const std::vector<ClassroomAddress>& SubjectRequest::Classrooms() const { return classrooms_; }
+std::size_t SubjectRequest::ID() const { return id_; }
 std::size_t SubjectRequest::Complexity() const { return complexity_; }
 std::size_t SubjectRequest::Professor() const { return professor_; }

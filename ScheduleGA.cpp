@@ -46,10 +46,11 @@ const ScheduleGAParams& ScheduleGA::Params() const
     return params_;
 }
 
-ScheduleGAStatistics ScheduleGA::Start(const std::vector<SubjectRequest>& requests)
+ScheduleGAStatistics ScheduleGA::Start(const std::vector<SubjectRequest>& requests,
+                                       const std::vector<SubjectWithAddress>& lockedLesson)
 {
     std::random_device randomDevice;
-    const ScheduleIndividual firstIndividual(randomDevice, &requests);
+    const ScheduleIndividual firstIndividual(randomDevice, &requests, &lockedLesson);
     firstIndividual.Evaluate();
 
     individuals_.clear();
