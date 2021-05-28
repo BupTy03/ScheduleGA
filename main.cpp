@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <array>
+#include <random>
 #include <execution>
 #include <algorithm>
 
@@ -153,76 +154,62 @@ static void FindOptimalParams(const std::vector<SubjectRequest>& requests, std::
 }
 
 
+static std::vector<bool> GenerateRandomWeekDays()
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<int> dist(0, 1);
+	std::vector<bool> weekDays(12);
+	for(auto& wd : weekDays)
+		wd = dist(gen);
+	
+	return weekDays;
+}
+
+static std::size_t GenerateRandomVal(std::size_t minID, std::size_t maxID)
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<std::size_t> dist(minID, maxID);
+	return dist(gen);
+}
+
+static std::size_t GenerateRandomID(std::size_t maxID)
+{
+	return GenerateRandomVal(0, maxID);
+}
+
+static std::vector<std::size_t> GenerateIDArray(std::size_t n)
+{
+	std::vector<std::size_t> result(n);
+	for(auto& v : result)
+		v = GenerateRandomID(1000);
+
+	return result;
+}
+
+static std::vector<ClassroomAddress> GenerateRandomClassrooms(std::size_t n)
+{
+	std::vector<ClassroomAddress> result(n);
+	for(auto& c : result)
+		c = ClassroomAddress(0, GenerateRandomVal(1, 1000));
+
+	return result;
+}
+
+
 int main()
 {
-	std::vector<bool> weekDays = {false, true, true, true, false, false, false, true, true, true, true, false};
-
-	std::vector<SubjectRequest> requests = {
-		SubjectRequest(0, 0, 1, weekDays, {1}, {{0, 101}, {0, 102}}),
-		SubjectRequest(1, 2, 2, weekDays, {1, 2}, {{0, 104}, {0, 105}}),
-		SubjectRequest(2, 4, 4, weekDays, {3}, {{0, 101}}),
-		SubjectRequest(3, 6, 3, weekDays, {4}, {{0, 105}, {0, 107}}),
-		SubjectRequest(4, 0, 1, weekDays, {1}, {{0, 101}, {0, 103}}),
-		SubjectRequest(5, 2, 2, weekDays, {1, 2}, {{1, 104}, {1, 105}}),
-		SubjectRequest(6, 4, 4, weekDays, {3}, {{0, 101}, {0, 110}}),
-		SubjectRequest(7, 6, 1, weekDays, {4}, {{0, 105}, {0, 107}}),
-		SubjectRequest(8, 0, 1, weekDays, {1}, {{0, 101}, {0, 103}}),
-		SubjectRequest(9, 2, 3, weekDays, {1, 2}, {{0, 104}, {0, 105}}),
-		SubjectRequest(10, 4, 2, weekDays, {3}, {{0, 101}, {0, 120}}),
-		SubjectRequest(11, 6, 1, weekDays, {4}, {{0, 105}, {0, 109}}),
-
-		SubjectRequest(12, 0, 1, weekDays, {1}, {{0, 101}, {0, 102}}),
-		SubjectRequest(13, 2, 2, weekDays, {1, 2}, {{0, 104}, {0, 105}}),
-		SubjectRequest(14, 4, 4, weekDays, {3}, {{0, 101}}),
-		SubjectRequest(15, 6, 3, weekDays, {4}, {{0, 105}, {0, 107}}),
-		SubjectRequest(16, 0, 1, weekDays, {1}, {{0, 101}, {0, 103}}),
-		SubjectRequest(17, 2, 2, weekDays, {1, 2}, {{1, 104}, {1, 105}}),
-		SubjectRequest(18, 4, 4, weekDays, {3}, {{0, 101}, {0, 110}}),
-		SubjectRequest(19, 6, 1, weekDays, {4}, {{0, 105}, {0, 107}}),
-		SubjectRequest(20, 0, 1, weekDays, {1}, {{0, 101}, {0, 103}}),
-		SubjectRequest(21, 2, 3, weekDays, {1, 2}, {{0, 104}, {0, 105}}),
-		SubjectRequest(22, 4, 2, weekDays, {3}, {{0, 101}, {0, 120}}),
-		SubjectRequest(23, 6, 1, weekDays, {4}, {{0, 105}, {0, 109}}),
-
-		SubjectRequest(24, 0, 1, weekDays, {1}, {{0, 101}, {0, 102}}),
-		SubjectRequest(25, 2, 2, weekDays, {1, 2}, {{0, 104}, {0, 105}}),
-		SubjectRequest(27, 4, 4, weekDays, {3}, {{0, 101}}),
-		SubjectRequest(28, 6, 3, weekDays, {4}, {{0, 105}, {0, 107}}),
-		SubjectRequest(29, 0, 1, weekDays, {1}, {{0, 101}, {0, 103}}),
-		SubjectRequest(30, 2, 2, weekDays, {1, 2}, {{1, 104}, {1, 105}}),
-		SubjectRequest(31, 4, 4, weekDays, {3}, {{0, 101}, {0, 110}}),
-		SubjectRequest(32, 6, 1, weekDays, {4}, {{0, 105}, {0, 107}}),
-		SubjectRequest(33, 0, 1, weekDays, {1}, {{0, 101}, {0, 103}}),
-		SubjectRequest(34, 2, 3, weekDays, {1, 2}, {{0, 104}, {0, 105}}),
-		SubjectRequest(35, 4, 2, weekDays, {3}, {{0, 101}, {0, 120}}),
-		SubjectRequest(36, 6, 1, weekDays, {4}, {{0, 105}, {0, 109}}),
-
-		SubjectRequest(37, 0, 1, weekDays, {1}, {{0, 101}, {0, 102}}),
-		SubjectRequest(38, 2, 2, weekDays, {1, 2}, {{0, 104}, {0, 105}}),
-		SubjectRequest(39, 4, 4, weekDays, {3}, {{0, 101}}),
-		SubjectRequest(40, 6, 3, weekDays, {4}, {{0, 105}, {0, 107}}),
-		SubjectRequest(41, 0, 1, weekDays, {1}, {{0, 101}, {0, 103}}),
-		SubjectRequest(42, 2, 2, weekDays, {1, 2}, {{1, 104}, {1, 105}}),
-		SubjectRequest(43, 4, 4, weekDays, {3}, {{0, 101}, {0, 110}}),
-		SubjectRequest(44, 6, 1, weekDays, {4}, {{0, 105}, {0, 107}}),
-		SubjectRequest(45, 0, 1, weekDays, {1}, {{0, 101}, {0, 103}}),
-		SubjectRequest(46, 2, 3, weekDays, {1, 2}, {{0, 104}, {0, 105}}),
-		SubjectRequest(47, 4, 2, weekDays, {3}, {{0, 101}, {0, 120}}),
-		SubjectRequest(48, 6, 1, weekDays, {4}, {{0, 105}, {0, 109}}),
-
-		SubjectRequest(49, 0, 1, weekDays, {1}, {{0, 101}, {0, 102}}),
-		SubjectRequest(50, 2, 2, weekDays, {1, 2}, {{0, 104}, {0, 105}}),
-		SubjectRequest(51, 4, 4, weekDays, {3}, {{0, 101}}),
-		SubjectRequest(52, 6, 3, weekDays, {4}, {{0, 105}, {0, 107}}),
-		SubjectRequest(53, 0, 1, weekDays, {1}, {{0, 101}, {0, 103}}),
-		SubjectRequest(54, 2, 2, weekDays, {1, 2}, {{1, 104}, {1, 105}}),
-		SubjectRequest(55, 4, 4, weekDays, {3}, {{0, 101}, {0, 110}}),
-		SubjectRequest(56, 6, 1, weekDays, {4}, {{0, 105}, {0, 107}}),
-		SubjectRequest(57, 0, 1, weekDays, {1}, {{0, 101}, {0, 103}}),
-		SubjectRequest(58, 2, 3, weekDays, {1, 2}, {{0, 104}, {0, 105}}),
-		SubjectRequest(59, 4, 2, weekDays, {3}, {{0, 101}, {0, 120}}),
-		SubjectRequest(60, 6, 1, weekDays, {4}, {{0, 105}, {0, 109}})
-	};
+	std::vector<SubjectRequest> requests;
+	for(std::size_t i = 0; i < 200; ++i)
+	{
+		requests.emplace_back(SubjectRequest(i, 
+											 GenerateRandomID(1000), 
+											 GenerateRandomVal(1, 4),
+											 GenerateRandomWeekDays(),
+											 GenerateIDArray(GenerateRandomVal(1, 7)),
+											 GenerateRandomClassrooms(GenerateRandomVal(1, 5))));
+	}
 
 	std::vector<SubjectWithAddress> lockedLessons = {
 		SubjectWithAddress(0, 0),
@@ -236,10 +223,10 @@ int main()
 	//FindOptimalIterationsCount(requests);
 
 	ScheduleGAParams params;
-	params.IndividualsCount = 1000;
+	params.IndividualsCount = 100;
     params.IterationsCount = 1100;
-    params.SelectionCount = 360;
-    params.CrossoverCount = 220;
+    params.SelectionCount = 36;
+    params.CrossoverCount = 22;
     params.MutationChance = 49;
 
 	ScheduleGA algo(params);
