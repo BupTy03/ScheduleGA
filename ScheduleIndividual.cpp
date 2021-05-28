@@ -44,6 +44,12 @@ void ScheduleChromosomes::InitFromRequest(const ScheduleData& data,
     if(it != lockedLessons.end())
     {
         lessons_.at(requestIndex) = it->Address;
+        if(requestClassrooms.empty())
+        {
+            classrooms_.at(requestIndex) = ClassroomAddress::Any();
+            return;
+        }
+
         for(auto&& classroom : requestClassrooms)
         {
             if(!ClassroomsIntersects(it->Address, classroom))
@@ -96,6 +102,9 @@ bool ScheduleChromosomes::GroupsOrProfessorsOrClassroomsIntersects(const Schedul
                                                                    std::size_t currentRequest,
                                                                    std::size_t currentLesson) const
 {
+    if(classrooms_.at(currentRequest) == ClassroomAddress::Any())
+        return GroupsOrProfessorsIntersects(data, currentRequest, currentLesson);
+
     const auto& requests = data.SubjectRequests();
     const auto& thisRequest = requests.at(currentRequest);
     auto it = std::find(lessons_.begin(), lessons_.end(), currentLesson);
@@ -139,6 +148,9 @@ bool ScheduleChromosomes::GroupsOrProfessorsIntersects(const ScheduleData& data,
 bool ScheduleChromosomes::ClassroomsIntersects(std::size_t currentLesson,
                                                const ClassroomAddress& currentClassroom) const
 {
+    if(currentClassroom == ClassroomAddress::Any())
+        return false;
+
     auto it = std::find(classrooms_.begin(), classrooms_.end(), currentClassroom);
     while(it != classrooms_.end())
     {
@@ -453,6 +465,9 @@ void ScheduleIndividual::ChangeClassroom(std::size_t requestIndex)
 {
     const auto& request = pData_->SubjectRequests().at(requestIndex);
     const auto& classrooms = request.Classrooms();
+
+    if(classrooms.empty())
+        return;
 
     std::uniform_int_distribution<std::size_t> classroomDistrib(0, classrooms.size() - 1);
     auto scheduleClassroom = classrooms.at(classroomDistrib(randomGenerator_));

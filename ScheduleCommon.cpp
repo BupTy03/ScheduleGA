@@ -53,10 +53,11 @@ std::size_t SubjectRequest::Professor() const { return professor_; }
 ScheduleData::ScheduleData(std::vector<SubjectRequest> subjectRequests,
                            std::vector<SubjectWithAddress> lockedLessons)
         : subjectRequests_(std::move(subjectRequests))
-        , lockedLessons_(std::move(lockedLessons))
+        , lockedLessonsSortedBySubjectID_(lockedLessons)
+        , lockedLessonsSortedByAddress_(std::move(lockedLessons))
 {
-    std::sort(lockedLessons_.begin(), lockedLessons_.end(), SubjectWithAddressLessByAddress());
-    lockedLessons_.erase(std::unique(lockedLessons_.begin(), lockedLessons_.end()), lockedLessons_.end());
+    std::sort(lockedLessonsSortedBySubjectID_.begin(), lockedLessonsSortedBySubjectID_.end(), SubjectWithAddressLessBySubjectID());
+    std::sort(lockedLessonsSortedByAddress_.begin(), lockedLessonsSortedByAddress_.end(), SubjectWithAddressLessByAddress());
 
     std::sort(subjectRequests_.begin(), subjectRequests_.end(), SubjectRequestIDLess());
     subjectRequests_.erase(std::unique(subjectRequests_.begin(), subjectRequests_.end(), SubjectRequestIDEqual()), subjectRequests_.end());
@@ -66,17 +67,16 @@ const std::vector<SubjectRequest>& ScheduleData::SubjectRequests() const { retur
 
 bool ScheduleData::LessonIsLocked(std::size_t lessonAddress) const
 {
-    auto it = std::lower_bound(lockedLessons_.begin(), lockedLessons_.end(), lessonAddress, SubjectWithAddressLessByAddress());
-    return it != lockedLessons_.end() && it->Address == lessonAddress;
+    return std::binary_search(lockedLessonsSortedByAddress_.begin(), 
+                              lockedLessonsSortedByAddress_.end(), 
+                              lessonAddress, SubjectWithAddressLessByAddress());
 }
 
 bool ScheduleData::RequestHasLockedLesson(const SubjectRequest& request) const
 {
-    auto it = std::find_if(lockedLessons_.begin(), lockedLessons_.end(), [&](const SubjectWithAddress& subject){
-        return subject.SubjectRequestID == request.ID();
-    });
-
-    return it != lockedLessons_.end();
+    return std::binary_search(lockedLessonsSortedBySubjectID_.begin(), 
+                              lockedLessonsSortedBySubjectID_.end(), 
+                              request.ID(), SubjectWithAddressLessBySubjectID());
 }
 
 const SubjectRequest& ScheduleData::SubjectRequestAtID(std::size_t subjectRequestID) const
@@ -90,5 +90,5 @@ const SubjectRequest& ScheduleData::SubjectRequestAtID(std::size_t subjectReques
 
 const std::vector<SubjectWithAddress>& ScheduleData::LockedLessons() const
 {
-    return lockedLessons_;
+    return lockedLessonsSortedByAddress_;
 }

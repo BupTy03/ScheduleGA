@@ -172,6 +172,24 @@ struct SubjectWithAddressLessByAddress
     }
 };
 
+struct SubjectWithAddressLessBySubjectID
+{
+    bool operator()(const SubjectWithAddress& lhs, const SubjectWithAddress& rhs) const
+    {
+        return lhs.SubjectRequestID < rhs.SubjectRequestID;
+    }
+
+    bool operator()(const SubjectWithAddress& lhs, std::size_t rhsSubjectRequestID) const
+    {
+        return lhs.SubjectRequestID < rhsSubjectRequestID;
+    }
+
+    bool operator()(std::size_t lhsrhsSubjectRequestID, const SubjectWithAddress& rhs) const
+    {
+        return lhsrhsSubjectRequestID < rhs.SubjectRequestID;
+    }
+};
+
 
 class ScheduleData
 {
@@ -189,7 +207,8 @@ public:
 
 private:
     std::vector<SubjectRequest> subjectRequests_;
-    std::vector<SubjectWithAddress> lockedLessons_;
+    std::vector<SubjectWithAddress> lockedLessonsSortedBySubjectID_;
+    std::vector<SubjectWithAddress> lockedLessonsSortedByAddress_;
 };
 
 
