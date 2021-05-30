@@ -17,6 +17,7 @@ macro(run_conan)
     REQUIRES
     ${CONAN_EXTRA_REQUIRES}
     catch2/2.13.3
+    range-v3/0.11.0
     OPTIONS
     ${CONAN_EXTRA_OPTIONS}
     BASIC_SETUP
