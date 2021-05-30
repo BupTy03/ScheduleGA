@@ -159,9 +159,9 @@ static std::vector<bool> GenerateRandomWeekDays()
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_int_distribution<int> dist(0, 1);
-	std::vector<bool> weekDays(12);
-	for(auto& wd : weekDays)
-		wd = dist(gen);
+	std::vector<bool> weekDays;
+	for(std::size_t i = 0; i < DAYS_IN_SCHEDULE_WEEK; ++i)
+		weekDays.emplace_back(dist(gen));
 	
 	return weekDays;
 }

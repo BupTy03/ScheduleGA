@@ -1,6 +1,7 @@
 #pragma once
 #include <limits>
 #include <vector>
+#include <array>
 #include <cassert>
 
 
@@ -198,26 +199,22 @@ public:
     explicit ScheduleData(std::vector<SubjectRequest> subjectRequests,
                           std::vector<SubjectWithAddress> lockedLessons);
 
-    const std::vector<SubjectRequest>& SubjectRequests() const;
+    const std::vector<SubjectRequest>& SubjectRequests() const { return subjectRequests_; }
     const SubjectRequest& SubjectRequestAtID(std::size_t subjectRequestID) const;
+    std::size_t IndexOfSubjectRequestWithID(std::size_t subjectRequestID) const;
 
-    const std::vector<SubjectWithAddress>& LockedLessons() const;
-    bool LessonIsLocked(std::size_t lessonAddress) const;
-    bool RequestHasLockedLesson(const SubjectRequest& request) const;
+    const std::vector<SubjectWithAddress>& LockedLessons() const { return lockedLessons_; }
+    bool SubjectRequestHasLockedLesson(const SubjectRequest& request) const;
 
 private:
     std::vector<SubjectRequest> subjectRequests_;
-    std::vector<SubjectWithAddress> lockedLessonsSortedBySubjectID_;
-    std::vector<SubjectWithAddress> lockedLessonsSortedByAddress_;
+    std::vector<SubjectWithAddress> lockedLessons_;
 };
 
 
 constexpr bool IsLateScheduleLessonInSaturday(std::size_t l)
 {
-    static_assert(MAX_LESSONS_COUNT == 84, "re-fill lateSaturdayLessonsTable");
-    assert(l < MAX_LESSONS_COUNT);
-
-    constexpr bool lateSaturdayLessonsTable[MAX_LESSONS_COUNT] = {
+    constexpr std::array lateSaturdayLessonsTable = {
         false,
         false,
         false,
@@ -315,5 +312,6 @@ constexpr bool IsLateScheduleLessonInSaturday(std::size_t l)
         true,
     };
 
+    static_assert(lateSaturdayLessonsTable.size() == MAX_LESSONS_COUNT, "re-fill lateSaturdayLessonsTable");
     return lateSaturdayLessonsTable[l];
 }

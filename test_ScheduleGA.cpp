@@ -6,11 +6,8 @@
 
 TEST_CASE("Check if groups or professors or classrooms intersects", "[ScheduleChromosomes]")
 {
-    const std::vector<bool> weekDays{
-        true, true, true, true, true, true,
-        true, true, true, true, true, true
-    };
-    const std::vector<SubjectRequest> requests {
+    const std::vector weekDays{true, true, true, true, true, true};
+    const std::vector requests {
         // [id, professor, complexity, weekDays, groups, classrooms]
         SubjectRequest(0, 1, 1, weekDays, {0, 1, 2}, {{0, 1}, {0, 2}, {0, 3}}),
         SubjectRequest(1, 2, 1, weekDays, {1, 2, 3}, {{0, 1}, {0, 2}, {0, 3}}),
@@ -41,11 +38,8 @@ TEST_CASE("Check if groups or professors or classrooms intersects", "[ScheduleCh
 
 TEST_CASE("Check if chromosomes ready crossover", "[ScheduleChromosomes]")
 {
-    const std::vector<bool> weekDays{
-        true, true, true, true, true, true,
-        true, true, true, true, true, true
-    };
-    const std::vector<SubjectRequest> requests {
+    const std::vector weekDays{true, true, true, true, true, true};
+    const std::vector requests {
         // [id, professor, complexity, weekDays, groups, classrooms]
         SubjectRequest(0, 1, 1, weekDays, {0, 1, 2}, {{0, 1}, {0, 2}, {0, 3}}),
         SubjectRequest(1, 2, 1, weekDays, {1, 2, 3}, {{0, 1}, {0, 2}, {0, 3}}),
@@ -67,11 +61,8 @@ TEST_CASE("Check if chromosomes ready crossover", "[ScheduleChromosomes]")
 
 TEST_CASE("Crossover works", "[ScheduleChromosomes]")
 {
-    const std::vector<bool> weekDays{
-        true, true, true, true, true, true,
-        true, true, true, true, true, true
-    };
-    const std::vector<SubjectRequest> requests {
+    const std::vector weekDays{true, true, true, true, true, true};
+    const std::vector requests {
         // [id, professor, complexity, weekDays, groups, classrooms]
         SubjectRequest(0, 1, 1, weekDays, {0, 1, 2}, {{0, 1}, {0, 2}, {0, 3}}),
         SubjectRequest(1, 2, 1, weekDays, {1, 2, 3}, {{0, 1}, {0, 2}, {0, 3}}),
