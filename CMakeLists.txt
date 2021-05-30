@@ -14,10 +14,23 @@ else()
   include(${CONAN_CATCH2_ROOT}/lib/cmake/Catch2/Catch.cmake)
 endif()
 
-add_executable(ScheduleGA main.cpp "ScheduleCommon.h" "ScheduleCommon.cpp" "utils.h" "LinearAllocator.h" "LinearAllocator.cpp" "ScheduleIndividual.h" "ScheduleIndividual.cpp" "ScheduleGA.h" "ScheduleGA.cpp")
+set(SRC_FILE "main.cpp"
+			"ScheduleCommon.h"
+			"ScheduleCommon.cpp"
+			"utils.h"
+			"LinearAllocator.h"
+			"LinearAllocator.cpp"
+			"ScheduleIndividual.h"
+			"ScheduleIndividual.cpp"
+			"ScheduleGA.h"
+			"ScheduleGA.cpp"
+			"ScheduleChromosomes.h"
+			"ScheduleChromosomes.cpp")
+
+add_executable(ScheduleGA  ${SRC_FILE})
 target_compile_features(ScheduleGA PUBLIC cxx_std_20)
 
-add_library(LibScheduleGA STATIC main.cpp "ScheduleCommon.h" "ScheduleCommon.cpp" "utils.h" "LinearAllocator.h" "LinearAllocator.cpp" "ScheduleIndividual.h" "ScheduleIndividual.cpp" "ScheduleGA.h" "ScheduleGA.cpp")
+add_library(LibScheduleGA STATIC ${SRC_FILE})
 target_compile_features(LibScheduleGA PUBLIC cxx_std_20)
 
 add_library(catch_main STATIC catch_main.cpp)
