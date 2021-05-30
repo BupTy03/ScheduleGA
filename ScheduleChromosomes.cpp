@@ -207,12 +207,9 @@ std::size_t Evaluate(const ScheduleChromosomes& scheduleChromosomes,
             std::size_t prevLesson = 0;
 		    for(std::size_t lesson : professorLessons | ranges::view::filter([&](std::size_t l){ return l >= firstLesson && l <= lastLesson; }))
 		    {
-                const auto lessonInDay = lesson % MAX_LESSONS_PER_DAY;
-                const auto lessonsGap = lessonInDay - prevLesson;
+                const auto lessonsGap = lesson - prevLesson;
 			    if(lessonsGap > 1)
                     dayLessonsGapsSum += (lessonsGap - 1);
-                
-                prevLesson = lessonInDay;
             }
 
             maxLessonsGapsForProfessorsSum = std::max(maxLessonsGapsForProfessorsSum, dayLessonsGapsSum);
@@ -236,17 +233,16 @@ std::size_t Evaluate(const ScheduleChromosomes& scheduleChromosomes,
 			for(auto&&[lesson, index] : groupLessons | ranges::view::filter([&](auto&& p){ return p.first >= firstLesson && p.first <= lastLesson; }))
 			{
 				const auto& classroom = scheduleChromosomes.Classroom(index);
-                const auto lessonInDay = lesson % MAX_LESSONS_PER_DAY;
-                const auto lessonsGap = lessonInDay - prevLesson;
+                const auto lessonsGap = lesson - prevLesson;
 				if(!(prevBuilding == classroom.Building || classroom.Building == NO_BUILDING || prevBuilding == NO_BUILDING || lessonsGap > 1))
 					dayBuldingsChange += 1;
 
                 if(lessonsGap > 1)
                     dayLessonsGapsSum += (lessonsGap - 1);
 
-                dayComplexity += lessonInDay * scheduleData.SubjectRequests().at(index).Complexity();
+                dayComplexity += lesson * scheduleData.SubjectRequests().at(index).Complexity();
 
-				prevLesson = lessonInDay;
+				prevLesson = lesson;
 				prevBuilding = classroom.Building;
 			}
 
@@ -256,5 +252,5 @@ std::size_t Evaluate(const ScheduleChromosomes& scheduleChromosomes,
         }
     }
 
-    return maxLessonsGapsForGroupsSum * 3 + maxLessonsGapsForProfessorsSum * 2 + maxDayComplexity * 4 + maxBuildingsDayEval * 64;
+    return maxLessonsGapsForGroupsSum * 3 + maxLessonsGapsForProfessorsSum * 2 + maxDayComplexity + maxBuildingsDayEval * 64;
 }
