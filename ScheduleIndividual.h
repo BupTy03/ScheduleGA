@@ -37,6 +37,7 @@ private:
     const ScheduleData* pData_;
     mutable std::size_t evaluatedValue_;
     ScheduleChromosomes chromosomes_;
+    mutable std::vector<std::uint8_t> buffer_;
     mutable std::mt19937 randomGenerator_;
 };
 

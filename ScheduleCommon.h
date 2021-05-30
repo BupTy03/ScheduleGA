@@ -1,13 +1,8 @@
 #pragma once
-#include "utils.h"
 #include <limits>
 #include <vector>
 #include <array>
-#include <algorithm>
-#include <iterator>
 #include <cassert>
-#include <unordered_map>
-#include <unordered_set>
 
 
 constexpr auto MAX_LESSONS_PER_DAY = 7;
@@ -211,27 +206,11 @@ public:
     const std::vector<SubjectWithAddress>& LockedLessons() const { return lockedLessons_; }
     bool SubjectRequestHasLockedLesson(const SubjectRequest& request) const;
 
-    const std::unordered_map<std::size_t, std::unordered_set<std::size_t>>& Professors() const { return professorRequests_; }
-    const std::unordered_map<std::size_t, std::unordered_set<std::size_t>>& Groups() const { return groupRequests_; }
-
 private:
     std::vector<SubjectRequest> subjectRequests_;
     std::vector<SubjectWithAddress> lockedLessons_;
-    std::unordered_map<std::size_t, std::unordered_set<std::size_t>> professorRequests_;
-    std::unordered_map<std::size_t, std::unordered_set<std::size_t>> groupRequests_;
 };
 
-template<typename T>
-std::vector<T> Merge(const std::vector<T>& lhs,
-                     const std::vector<T>& rhs)
-{
-    assert(std::is_sorted(lhs.begin(), lhs.end()));
-    assert(std::is_sorted(rhs.begin(), rhs.end()));
-
-    std::vector<T> tmp;
-    std::merge(lhs.begin(), lhs.end(), rhs.begin(), rhs.end(), std::back_inserter(tmp));
-    return tmp;
-}
 
 constexpr bool IsLateScheduleLessonInSaturday(std::size_t l)
 {

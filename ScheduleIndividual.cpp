@@ -16,6 +16,7 @@ ScheduleIndividual::ScheduleIndividual(std::random_device& randomDevice,
     : pData_(pData)
     , evaluatedValue_(NOT_EVALUATED)
     , chromosomes_(*pData)
+    , buffer_(DEFAULT_BUFFER_SIZE)
     , randomGenerator_(randomDevice())
 {
     assert(pData != nullptr);
@@ -31,6 +32,7 @@ ScheduleIndividual::ScheduleIndividual(const ScheduleIndividual& other)
     : pData_(other.pData_)
     , evaluatedValue_(other.evaluatedValue_)
     , chromosomes_(other.chromosomes_)
+    , buffer_(other.buffer_.size())
     , randomGenerator_(other.randomGenerator_)
 {
 }
@@ -46,6 +48,7 @@ ScheduleIndividual::ScheduleIndividual(ScheduleIndividual&& other) noexcept
     : pData_(other.pData_)
     , evaluatedValue_(other.evaluatedValue_)
     , chromosomes_(std::move(other.chromosomes_))
+    , buffer_(other.buffer_.size())
     , randomGenerator_(other.randomGenerator_)
 {
 }
@@ -79,7 +82,9 @@ std::size_t ScheduleIndividual::Evaluate() const
     if(evaluatedValue_ != NOT_EVALUATED)
         return evaluatedValue_;
 
-    evaluatedValue_ = ::Evaluate(chromosomes_, *pData_);
+    LinearAllocatorBufferSpan bufferSpan(buffer_.data(), buffer_.size());
+    evaluatedValue_ = EvaluateSchedule(bufferSpan, *pData_, chromosomes_);
+    buffer_.resize(std::max(bufferSpan.peak, buffer_.size()));
     return evaluatedValue_;
 }
 
