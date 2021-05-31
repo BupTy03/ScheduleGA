@@ -6,6 +6,8 @@
 #include <execution>
 #include <algorithm>
 
+#include <range/v3/all.hpp>
+
 
 static void FindOptimalIterationsCount(const std::vector<SubjectRequest>& requests, std::ostream& os = std::cout)
 {
@@ -179,20 +181,20 @@ static std::size_t GenerateRandomID(std::size_t maxID)
 	return GenerateRandomVal(0, maxID);
 }
 
-static std::vector<std::size_t> GenerateIDArray(std::size_t n)
+static std::vector<std::size_t> GenerateIDArray(std::size_t n, std::size_t maxVal = 1000)
 {
 	std::vector<std::size_t> result(n);
 	for(auto& v : result)
-		v = GenerateRandomID(1000);
+		v = GenerateRandomID(maxVal);
 
 	return result;
 }
 
-static std::vector<ClassroomAddress> GenerateRandomClassrooms(std::size_t n)
+static std::vector<ClassroomAddress> GenerateRandomClassrooms(std::size_t n, std::size_t maxVal = 1000)
 {
 	std::vector<ClassroomAddress> result(n);
 	for(auto& c : result)
-		c = ClassroomAddress(0, GenerateRandomVal(1, 1000));
+		c = ClassroomAddress(0, GenerateRandomVal(1, maxVal));
 
 	return result;
 }
@@ -201,14 +203,14 @@ static std::vector<ClassroomAddress> GenerateRandomClassrooms(std::size_t n)
 int main()
 {
 	std::vector<SubjectRequest> requests;
-	for(std::size_t i = 0; i < 200; ++i)
+	for(std::size_t i = 0; i < 20; ++i)
 	{
 		requests.emplace_back(SubjectRequest(i, 
-											 GenerateRandomID(1000), 
+											 GenerateRandomID(1000),
 											 GenerateRandomVal(1, 4),
 											 GenerateRandomWeekDays(),
-											 GenerateIDArray(GenerateRandomVal(1, 7)),
-											 GenerateRandomClassrooms(GenerateRandomVal(1, 5))));
+											 GenerateIDArray(GenerateRandomVal(1, 5), 10),
+											 GenerateRandomClassrooms(GenerateRandomVal(1, 3), 10)));
 	}
 
 	std::vector<SubjectWithAddress> lockedLessons = {
@@ -223,10 +225,10 @@ int main()
 	//FindOptimalIterationsCount(requests);
 
 	ScheduleGAParams params;
-	params.IndividualsCount = 100;
+	params.IndividualsCount = 1000;
     params.IterationsCount = 1100;
-    params.SelectionCount = 36;
-    params.CrossoverCount = 22;
+    params.SelectionCount = 360;
+    params.CrossoverCount = 220;
     params.MutationChance = 49;
 
 	ScheduleGA algo(params);

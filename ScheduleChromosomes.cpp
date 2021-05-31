@@ -1,6 +1,8 @@
 #include "ScheduleChromosomes.h"
 #include "utils.h"
 
+#include <range/v3/all.hpp>
+
 
 static constexpr std::size_t NO_LESSON = std::numeric_limits<std::size_t>::max();
 static constexpr std::size_t NOT_EVALUATED = std::numeric_limits<std::size_t>::max();
@@ -93,6 +95,7 @@ bool ScheduleChromosomes::GroupsOrProfessorsOrClassroomsIntersects(const Schedul
 
     const auto& requests = data.SubjectRequests();
     const auto& thisRequest = requests.at(currentRequest);
+
     auto it = std::find(lessons_.begin(), lessons_.end(), currentLesson);
     while(it != lessons_.end())
     {
@@ -182,176 +185,72 @@ void Crossover(ScheduleChromosomes& first,
     swap(first.Classroom(r), second.Classroom(r));
 }
 
-
-std::size_t EvaluateSchedule(LinearAllocatorBufferSpan& bufferSpan,
-                             const ScheduleData& scheduleData,
-                             const ScheduleChromosomes& scheduleChromosomes)
+std::size_t Evaluate(const ScheduleChromosomes& scheduleChromosomes,
+                     const ScheduleData& scheduleData)
 {
-    std::size_t evaluatedValue = 0;
+    std::size_t maxBuildingsDayEval = 0;
+    std::size_t maxDayComplexity = 0;
+    std::size_t maxLessonsGapsForGroupsSum = 0;
+    std::size_t maxLessonsGapsForProfessorsSum = 0;
 
-    using IntPair = std::pair<std::size_t, std::size_t>;
-    using MapPair = std::pair<std::size_t, std::array<bool, MAX_LESSONS_PER_DAY>>;
-    using BuilingPair = std::pair<std::size_t, std::array<std::size_t, MAX_LESSONS_PER_DAY>>;
+    const auto& requests = scheduleData.SubjectRequests();
 
-    using ComplexityMap = SortedMap<std::size_t, std::size_t, LinearAllocator<IntPair>>;
-    using WindowsMap = SortedMap<std::size_t, std::array<bool, MAX_LESSONS_PER_DAY>, LinearAllocator<MapPair>>;
-    using BuildingsMap = SortedMap<std::size_t, std::array<std::size_t, MAX_LESSONS_PER_DAY>, LinearAllocator<BuilingPair>>;
-
-    std::array<ComplexityMap, DAYS_IN_SCHEDULE> dayComplexity{
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan)),
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan)),
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan)),
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan)),
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan)),
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan)),
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan)),
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan)),
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan)),
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan)),
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan)),
-        ComplexityMap(LinearAllocator<IntPair>(&bufferSpan))
-    };
-
-    std::array<WindowsMap, DAYS_IN_SCHEDULE> dayWindows{
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan))
-    };
-
-    std::array<WindowsMap, DAYS_IN_SCHEDULE> professorsDayWindows{
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan)),
-        WindowsMap(LinearAllocator<MapPair>(&bufferSpan))
-    };
-
-    std::array<BuildingsMap, DAYS_IN_SCHEDULE> buildingsInDay{
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan)),
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan)),
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan)),
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan)),
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan)),
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan)),
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan)),
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan)),
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan)),
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan)),
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan)),
-        BuildingsMap(LinearAllocator<BuilingPair>(&bufferSpan))
-    };
-
-    const auto requests = scheduleData.SubjectRequests();
-    for(std::size_t r = 0; r < requests.size(); ++r)
+    for(auto&&[professor, professorRequests] : scheduleData.Professors())
     {
-        const auto& request = requests.at(r);
-        const std::size_t lesson = scheduleChromosomes.Lesson(r);
-        if(lesson == NO_LESSON)
+        auto professorLessons = professorRequests | ranges::view::transform([&](std::size_t r){ return scheduleChromosomes.Lesson(r); });
+        for(std::size_t day : ranges::view::iota(0, DAYS_IN_SCHEDULE))
         {
-            evaluatedValue += 100;
-            continue;
-        }
+            const auto firstLesson = day * MAX_LESSONS_PER_DAY;
+		    const auto lastLesson = firstLesson + MAX_LESSONS_PER_DAY;
 
-        const std::size_t day = lesson / MAX_LESSONS_PER_DAY;
-        const std::size_t lessonInDay = lesson % MAX_LESSONS_PER_DAY;
-
-        professorsDayWindows[day][request.Professor()][lessonInDay] = true;
-        for(std::size_t group : request.Groups())
-        {
-            dayComplexity[day][group] += (lessonInDay * request.Complexity());
-            dayWindows[day][group][lessonInDay] = true;
-
-            auto& buildingsDay = buildingsInDay[day];
-            auto it = buildingsDay.lower_bound(group);
-            if(it == buildingsDay.end() || it->first != group)
-            {
-                std::array<std::size_t, MAX_LESSONS_PER_DAY> emptyBuildings;
-                emptyBuildings.fill(NO_BUILDING);
-                it = buildingsDay.emplace_hint(it, group, emptyBuildings);
-            }
-
-            if(scheduleChromosomes.Classroom(r) == ClassroomAddress::NoClassroom())
-            {
-                evaluatedValue += 100;
-                continue;
-            }
-
-            it->second[lessonInDay] = scheduleChromosomes.Classroom(r).Building;
-        }
-    }
-     
-    std::size_t maxComplexityPerDay = 0;
-    for(std::size_t d = 0; d < DAYS_IN_SCHEDULE; ++d)
-    {
-        // evaluating max complexity of day for group
-        for(auto&& p : dayComplexity[d])
-            maxComplexityPerDay = std::max(maxComplexityPerDay, p.second);
-
-        // evaluating summary lessons gaps for groups
-        for(auto&& p : dayWindows[d])
-        {
+            std::size_t dayLessonsGapsSum = 0;
             std::size_t prevLesson = 0;
-            for(std::size_t lessonNum = 0; lessonNum < MAX_LESSONS_PER_DAY; ++lessonNum)
-            {
-                if(p.second.at(lessonNum))
-                {
-                    const std::size_t lessonsGap = lessonNum - prevLesson;
-                    prevLesson = lessonNum;
-
-                    if(lessonsGap > 1)
-                        evaluatedValue += lessonsGap * 3;
-                }
+		    for(std::size_t lesson : professorLessons | ranges::view::filter([&](std::size_t l){ return l >= firstLesson && l <= lastLesson; }))
+		    {
+                const auto lessonsGap = lesson - prevLesson;
+			    if(lessonsGap > 1)
+                    dayLessonsGapsSum += (lessonsGap - 1);
             }
-        }
 
-        // evaluating summary lessons gaps for professors
-        for(auto&& p : professorsDayWindows[d])
-        {
-            std::size_t prevLesson = 0;
-            for(std::size_t lessonNum = 0; lessonNum < MAX_LESSONS_PER_DAY; ++lessonNum)
-            {
-                if(p.second.at(lessonNum))
-                {
-                    const std::size_t lessonsGap = lessonNum - prevLesson;
-                    prevLesson = lessonNum;
-
-                    if(lessonsGap > 1)
-                        evaluatedValue += lessonsGap * 2;
-                }
-            }
-        }
-
-        // evaluating count transitions between buildings per day
-        for(auto&& p : buildingsInDay[d])
-        {
-            std::size_t prevBuilding = NO_BUILDING;
-            for(std::size_t lessonNum = 0; lessonNum < MAX_LESSONS_PER_DAY; ++lessonNum)
-            {
-                const auto currentBuilding = p.second.at(lessonNum);
-                if( !(currentBuilding == NO_BUILDING || prevBuilding == NO_BUILDING || currentBuilding == prevBuilding) )
-                    evaluatedValue += 64;
-
-                prevBuilding = currentBuilding;
-            }
+            maxLessonsGapsForProfessorsSum = std::max(maxLessonsGapsForProfessorsSum, dayLessonsGapsSum);
         }
     }
 
-    evaluatedValue += maxComplexityPerDay;
-    return evaluatedValue;
+    for(auto&&[group, groupRequests] : scheduleData.Groups())
+    {
+        auto groupLessons = ranges::view::zip(groupRequests | ranges::view::transform([&](std::size_t r){ return scheduleChromosomes.Lesson(r); }), groupRequests);
+        for(std::size_t day : ranges::view::iota(0, DAYS_IN_SCHEDULE))
+        {
+            const auto firstLesson = day * MAX_LESSONS_PER_DAY;
+		    const auto lastLesson = firstLesson + MAX_LESSONS_PER_DAY;
+
+            std::size_t dayLessonsGapsSum = 0;
+			std::size_t dayBuldingsChange = 0;
+            std::size_t dayComplexity = 0;
+
+			std::size_t prevBuilding = NO_BUILDING;
+			std::size_t prevLesson = 0;
+			for(auto&&[lesson, index] : groupLessons | ranges::view::filter([&](auto&& p){ return p.first >= firstLesson && p.first <= lastLesson; }))
+			{
+				const auto& classroom = scheduleChromosomes.Classroom(index);
+                const auto lessonsGap = lesson - prevLesson;
+				if(!(prevBuilding == classroom.Building || classroom.Building == NO_BUILDING || prevBuilding == NO_BUILDING || lessonsGap > 1))
+					dayBuldingsChange += 1;
+
+                if(lessonsGap > 1)
+                    dayLessonsGapsSum += (lessonsGap - 1);
+
+                dayComplexity += lesson * scheduleData.SubjectRequests().at(index).Complexity();
+
+				prevLesson = lesson;
+				prevBuilding = classroom.Building;
+			}
+
+            maxBuildingsDayEval = std::max(maxBuildingsDayEval, dayBuldingsChange);
+            maxDayComplexity = std::max(maxDayComplexity, dayComplexity);
+            maxLessonsGapsForGroupsSum = std::max(maxLessonsGapsForGroupsSum, dayLessonsGapsSum);
+        }
+    }
+
+    return maxLessonsGapsForGroupsSum * 3 + maxLessonsGapsForProfessorsSum * 2 + maxDayComplexity + maxBuildingsDayEval * 64;
 }

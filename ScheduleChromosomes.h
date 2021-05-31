@@ -53,6 +53,5 @@ void Crossover(ScheduleChromosomes& first,
                ScheduleChromosomes& second,
                std::size_t r);
 
-std::size_t EvaluateSchedule(LinearAllocatorBufferSpan& bufferSpan,
-                             const ScheduleData& scheduleData,
-                             const ScheduleChromosomes& scheduleChromosomes);
+std::size_t Evaluate(const ScheduleChromosomes& scheduleChromosomes,
+                     const ScheduleData& scheduleData);
