@@ -214,11 +214,11 @@ int main()
 	}
 
 	std::vector<SubjectWithAddress> lockedLessons = {
-		SubjectWithAddress(0, 0),
+		/*SubjectWithAddress(0, 0),
 		SubjectWithAddress(1, 1),
 		SubjectWithAddress(2, 2),
 		SubjectWithAddress(3, 3),
-		SubjectWithAddress(4, 4)
+		SubjectWithAddress(4, 4)*/
 	};
 
 	//FindOptimalParams(requests);
