@@ -4,6 +4,7 @@
 #include <cassert>
 #include <exception>
 #include <execution>
+#include <algorithm>
 
 
 ScheduleGA::ScheduleGA() : ScheduleGA(ScheduleGA::DefaultParams())
@@ -32,13 +33,13 @@ ScheduleGA::ScheduleGA(const ScheduleGAParams& params)
 
 ScheduleGAParams ScheduleGA::DefaultParams()
 {
-    ScheduleGAParams result;
-    result.IndividualsCount = 1000;
-    result.IterationsCount = 1100;
-    result.SelectionCount = 360;
-    result.CrossoverCount = 220;
-    result.MutationChance = 49;
-    return result;
+    return ScheduleGAParams{
+        .IndividualsCount = 1000,
+        .IterationsCount = 1100,
+        .SelectionCount = 360,
+        .CrossoverCount = 220,
+        .MutationChance = 49
+    };
 }
 
 ScheduleGAStatistics ScheduleGA::Start(const ScheduleData& scheduleData)
@@ -61,10 +62,11 @@ ScheduleGAStatistics ScheduleGA::Start(const ScheduleData& scheduleData)
     for(std::size_t iteration = 0; iteration < params_.IterationsCount; ++iteration)
     {
         // mutate
-        std::for_each(std::execution::par_unseq, individuals_.begin(), individuals_.end(), ScheduleIndividualMutator(params_.MutationChance));
+        std::for_each(std::execution::par_unseq, individuals_.begin(), individuals_.end(), 
+                      ScheduleIndividualMutator(params_.MutationChance));
 
         // select best
-        std::nth_element(individuals_.begin(), individuals_.begin() + params_.SelectionCount, individuals_.end(), ScheduleIndividualLess());
+        std::ranges::nth_element(individuals_, individuals_.begin() + params_.SelectionCount, ScheduleIndividualLess());
 
         //std::cout << "Iteration: " << iteration << "; Best: " << std::min_element(individuals_.begin(), individuals_.begin() + SelectionCount(), ScheduleIndividualLess())->Evaluate() << '\n';
 
@@ -79,17 +81,17 @@ ScheduleGAStatistics ScheduleGA::Start(const ScheduleData& scheduleData)
         std::for_each(std::execution::par_unseq, individuals_.begin(), individuals_.end(), ScheduleIndividualEvaluator());
 
         // natural selection
-        std::nth_element(individuals_.begin(), individuals_.end() - params_.SelectionCount, individuals_.end(), ScheduleIndividualLess());
+        std::ranges::nth_element(individuals_, individuals_.end() - params_.SelectionCount, ScheduleIndividualLess());
         std::copy_n(individuals_.begin(), params_.SelectionCount, individuals_.end() - params_.SelectionCount);
     }
 
-    std::sort(individuals_.begin(), individuals_.end(), ScheduleIndividualLess());
+    std::ranges::sort(individuals_, ScheduleIndividualLess());
     result.Time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginTime);
     return result;
 }
 
 const std::vector<ScheduleIndividual>& ScheduleGA::Individuals() const
 {
-    assert(std::is_sorted(individuals_.begin(), individuals_.end(), ScheduleIndividualLess()));
+    assert(std::ranges::is_sorted(individuals_, ScheduleIndividualLess()));
     return individuals_;
 }

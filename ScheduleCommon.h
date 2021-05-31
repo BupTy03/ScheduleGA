@@ -112,23 +112,6 @@ private:
     std::vector<ClassroomAddress> classrooms_;
 };
 
-
-struct SubjectRequestIDLess
-{
-    bool operator()(const SubjectRequest& lhs, const SubjectRequest& rhs) const
-    {
-        return lhs.ID() < rhs.ID();
-    }
-    bool operator()(const SubjectRequest& lhs, std::size_t rhsID) const
-    {
-        return lhs.ID() < rhsID;
-    }
-    bool operator()(std::size_t lhsID, const SubjectRequest& rhs) const
-    {
-        return lhsID < rhs.ID();
-    }
-};
-
 struct SubjectRequestIDEqual
 {
     bool operator()(const SubjectRequest& lhs, const SubjectRequest& rhs) const
@@ -158,42 +141,6 @@ struct SubjectWithAddress
 
     std::size_t SubjectRequestID = 0;
     std::size_t Address = 0;
-};
-
-struct SubjectWithAddressLessByAddress
-{
-    bool operator()(const SubjectWithAddress& lhs, const SubjectWithAddress& rhs) const
-    {
-        return lhs.Address < rhs.Address;
-    }
-
-    bool operator()(const SubjectWithAddress& lhs, std::size_t rhsAddress) const
-    {
-        return lhs.Address < rhsAddress;
-    }
-
-    bool operator()(std::size_t lhsAddress, const SubjectWithAddress& rhs) const
-    {
-        return lhsAddress < rhs.Address;
-    }
-};
-
-struct SubjectWithAddressLessBySubjectID
-{
-    bool operator()(const SubjectWithAddress& lhs, const SubjectWithAddress& rhs) const
-    {
-        return lhs.SubjectRequestID < rhs.SubjectRequestID;
-    }
-
-    bool operator()(const SubjectWithAddress& lhs, std::size_t rhsSubjectRequestID) const
-    {
-        return lhs.SubjectRequestID < rhsSubjectRequestID;
-    }
-
-    bool operator()(std::size_t lhsrhsSubjectRequestID, const SubjectWithAddress& rhs) const
-    {
-        return lhsrhsSubjectRequestID < rhs.SubjectRequestID;
-    }
 };
 
 

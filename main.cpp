@@ -3,6 +3,7 @@
 #include <iostream>
 #include <array>
 #include <random>
+#include <functional>
 #include <execution>
 #include <algorithm>
 
@@ -203,9 +204,9 @@ static std::vector<ClassroomAddress> GenerateRandomClassrooms(std::size_t n, std
 int main()
 {
 	std::vector<SubjectRequest> requests;
-	for(std::size_t i = 0; i < 20; ++i)
+	for(std::size_t i = 0; i < 200; ++i)
 	{
-		requests.emplace_back(SubjectRequest(i, 
+		requests.emplace_back(SubjectRequest(i,
 											 GenerateRandomID(1000),
 											 GenerateRandomVal(1, 4),
 											 GenerateRandomWeekDays(),
