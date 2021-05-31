@@ -187,36 +187,6 @@ void Crossover(ScheduleChromosomes& first,
     swap(first.Classroom(r), second.Classroom(r));
 }
 
-static std::size_t CalculateMaxLessonsGaps(std::unordered_set<std::size_t>& requests,
-                                           const ScheduleChromosomes& scheduleChromosomes)
-{
-    std::vector<std::pair<std::size_t, std::size_t>> lessonsBuffer;
-    lessonsBuffer.reserve(requests.size());
-    std::ranges::transform(requests, std::back_inserter(lessonsBuffer), 
-                            [&](std::size_t r) { return std::pair{scheduleChromosomes.Lesson(r), r}; });
-
-    std::ranges::sort(lessonsBuffer);
-    auto lastLesson = std::ranges::lower_bound(lessonsBuffer, NO_LESSON, 
-                                                std::less<>{}, [](auto&& p) { return p.first; });
-
-    std::size_t result = 0;
-    for(auto it = lessonsBuffer.begin(); it != lastLesson;)
-    {
-        const std::size_t day = it->first / MAX_LESSONS_PER_DAY;
-        const std::size_t nextDayFirstLesson = (day + 1) * MAX_LESSONS_PER_DAY;
-        const auto nextDayIt = std::ranges::lower_bound(lessonsBuffer, nextDayFirstLesson, 
-                                                        std::less<>{}, [](auto&& p) { return p.first; });
-
-        result += std::inner_product(std::next(lessonsBuffer.begin()), lessonsBuffer.end(), 
-                                     lessonsBuffer.begin(), std::size_t{0}, std::plus<>{}, 
-                                     [](auto&& lhs, auto&& rhs) { return lhs.first - rhs.first; });
-
-        it = nextDayIt;
-    }
-
-    return result;
-}
-
 std::size_t Evaluate(const ScheduleChromosomes& scheduleChromosomes,
                      const ScheduleData& scheduleData)
 {
