@@ -1,7 +1,9 @@
 #include "ScheduleChromosomes.h"
 #include "utils.h"
 
-#include <range/v3/all.hpp>
+#include <utility>
+#include <numeric>
+#include <functional>
 
 
 static constexpr std::size_t NO_LESSON = std::numeric_limits<std::size_t>::max();
@@ -185,76 +187,128 @@ void Crossover(ScheduleChromosomes& first,
     swap(first.Classroom(r), second.Classroom(r));
 }
 
+static std::size_t CalculateMaxLessonsGaps(std::unordered_set<std::size_t>& requests,
+                                           const ScheduleChromosomes& scheduleChromosomes)
+{
+    std::vector<std::pair<std::size_t, std::size_t>> lessonsBuffer;
+    lessonsBuffer.reserve(requests.size());
+    std::ranges::transform(requests, std::back_inserter(lessonsBuffer), 
+                            [&](std::size_t r) { return std::pair{scheduleChromosomes.Lesson(r), r}; });
+
+    std::ranges::sort(lessonsBuffer);
+    auto lastLesson = std::ranges::lower_bound(lessonsBuffer, NO_LESSON, 
+                                                std::less<>{}, [](auto&& p) { return p.first; });
+
+    std::size_t result = 0;
+    for(auto it = lessonsBuffer.begin(); it != lastLesson;)
+    {
+        const std::size_t day = it->first / MAX_LESSONS_PER_DAY;
+        const std::size_t nextDayFirstLesson = (day + 1) * MAX_LESSONS_PER_DAY;
+        const auto nextDayIt = std::ranges::lower_bound(lessonsBuffer, nextDayFirstLesson, 
+                                                        std::less<>{}, [](auto&& p) { return p.first; });
+
+        result += std::inner_product(std::next(lessonsBuffer.begin()), lessonsBuffer.end(), 
+                                     lessonsBuffer.begin(), std::size_t{0}, std::plus<>{}, 
+                                     [](auto&& lhs, auto&& rhs) { return lhs.first - rhs.first; });
+
+        it = nextDayIt;
+    }
+
+    return result;
+}
+
 std::size_t Evaluate(const ScheduleChromosomes& scheduleChromosomes,
                      const ScheduleData& scheduleData)
 {
-    std::size_t maxBuildingsDayEval = 0;
     std::size_t maxDayComplexity = 0;
-    std::size_t maxLessonsGapsForGroupsSum = 0;
-    std::size_t maxLessonsGapsForProfessorsSum = 0;
+    std::size_t maxLessonsGapsForGroups = 0;
+    std::size_t maxLessonsGapsForProfessors = 0;
+    std::size_t maxBuildingsChangesForGroups = 0;
+    std::size_t maxBuildingsChangesForProfessors = 0;
+
+    auto calculateGap = [](auto&& lhs, auto&& rhs) {
+        return lhs.first - rhs.first;
+    };
+
+    auto buildingsChanged = [&](auto&& lhs, auto&& rhs) -> bool {
+        const auto lhsBuilding = scheduleChromosomes.Classroom(lhs.second).Building;
+        const auto rhsBuilding = scheduleChromosomes.Classroom(rhs.second).Building;
+
+        return !(lhsBuilding == rhsBuilding || 
+                 lhsBuilding == NO_BUILDING || 
+                 rhsBuilding == NO_BUILDING);
+    };
 
     const auto& requests = scheduleData.SubjectRequests();
-
+    std::vector<std::pair<std::size_t, std::size_t>> lessonsBuffer;
     for(auto&&[professor, professorRequests] : scheduleData.Professors())
     {
-        auto professorLessons = professorRequests | ranges::view::transform([&](std::size_t r){ return scheduleChromosomes.Lesson(r); });
-        for(std::size_t day : ranges::view::iota(0, DAYS_IN_SCHEDULE))
+        lessonsBuffer.clear();
+        lessonsBuffer.reserve(professorRequests.size());
+        std::ranges::transform(professorRequests, std::back_inserter(lessonsBuffer), 
+                                [&](std::size_t r) { return std::pair{scheduleChromosomes.Lesson(r), r}; });
+
+        std::ranges::sort(lessonsBuffer);
+        auto lastLesson = std::ranges::lower_bound(lessonsBuffer, NO_LESSON, 
+                                                   std::less<>{}, [](auto&& p) { return p.first; });
+
+        for(auto firstDayLessonIt = lessonsBuffer.begin(); firstDayLessonIt != lastLesson;)
         {
-            const auto firstLesson = day * MAX_LESSONS_PER_DAY;
-		    const auto lastLesson = firstLesson + MAX_LESSONS_PER_DAY;
+            const std::size_t day = firstDayLessonIt->first / MAX_LESSONS_PER_DAY;
+            const std::size_t nextDayFirstLesson = (day + 1) * MAX_LESSONS_PER_DAY;
+            const auto lastDayLessonIt = std::ranges::lower_bound(lessonsBuffer, nextDayFirstLesson,
+                                                                  std::less<>{}, [](auto&& p) { return p.first; });
 
-            std::size_t dayLessonsGapsSum = 0;
-            std::size_t prevLesson = 0;
-		    for(std::size_t lesson : professorLessons | ranges::view::filter([&](std::size_t l){ return l >= firstLesson && l <= lastLesson; }))
-		    {
-                const auto lessonInDay = lesson % MAX_LESSONS_PER_DAY;
-                const auto lessonsGap = lessonInDay - prevLesson;
-			    if(lessonsGap > 1)
-                    dayLessonsGapsSum += (lessonsGap - 1);
-                
-                prevLesson = lessonInDay;
-            }
+            maxLessonsGapsForProfessors = std::max(maxLessonsGapsForProfessors, 
+                                                   std::inner_product(std::next(firstDayLessonIt), lastDayLessonIt,
+                                                                      firstDayLessonIt, std::size_t{0}, std::plus<>{}, calculateGap));
 
-            maxLessonsGapsForProfessorsSum = std::max(maxLessonsGapsForProfessorsSum, dayLessonsGapsSum);
+            maxBuildingsChangesForProfessors = std::max(maxBuildingsChangesForProfessors,
+                                                        std::inner_product(std::next(firstDayLessonIt), lastDayLessonIt,
+                                                                           firstDayLessonIt, std::size_t{0}, std::plus<>{}, buildingsChanged));
+
+            firstDayLessonIt = lastDayLessonIt;
         }
     }
 
     for(auto&&[group, groupRequests] : scheduleData.Groups())
     {
-        auto groupLessons = ranges::view::zip(groupRequests | ranges::view::transform([&](std::size_t r){ return scheduleChromosomes.Lesson(r); }), groupRequests);
-        for(std::size_t day : ranges::view::iota(0, DAYS_IN_SCHEDULE))
+        lessonsBuffer.clear();
+        lessonsBuffer.reserve(groupRequests.size());
+        std::ranges::transform(groupRequests, std::back_inserter(lessonsBuffer), 
+                               [&](std::size_t r) { return std::pair{scheduleChromosomes.Lesson(r), r}; });
+
+        std::ranges::sort(lessonsBuffer);
+        auto lastLesson = std::ranges::lower_bound(lessonsBuffer, NO_LESSON, 
+                                                   std::less<>{}, [](auto&& p) { return p.first; });
+
+        for(auto firstDayLessonIt = lessonsBuffer.begin(); firstDayLessonIt != lastLesson;)
         {
-            const auto firstLesson = day * MAX_LESSONS_PER_DAY;
-		    const auto lastLesson = firstLesson + MAX_LESSONS_PER_DAY;
+            const std::size_t day = firstDayLessonIt->first / MAX_LESSONS_PER_DAY;
+            const std::size_t nextDayFirstLesson = (day + 1) * MAX_LESSONS_PER_DAY;
+            const auto lastDayLessonIt = std::ranges::lower_bound(lessonsBuffer, nextDayFirstLesson,
+                                                                  std::less<>{}, [](auto&& p) { return p.first; });
 
-            std::size_t dayLessonsGapsSum = 0;
-			std::size_t dayBuldingsChange = 0;
-            std::size_t dayComplexity = 0;
+            maxLessonsGapsForGroups = std::max(maxLessonsGapsForGroups, 
+                                               std::inner_product(std::next(firstDayLessonIt), lastDayLessonIt,
+                                                                  firstDayLessonIt, std::size_t{0}, std::plus<>{}, calculateGap));
 
-			std::size_t prevBuilding = NO_BUILDING;
-			std::size_t prevLesson = 0;
-			for(auto&&[lesson, index] : groupLessons | ranges::view::filter([&](auto&& p){ return p.first >= firstLesson && p.first <= lastLesson; }))
-			{
-				const auto& classroom = scheduleChromosomes.Classroom(index);
-                const auto lessonInDay = lesson % MAX_LESSONS_PER_DAY;
-                const auto lessonsGap = lessonInDay - prevLesson;
-				if(!(prevBuilding == classroom.Building || classroom.Building == NO_BUILDING || prevBuilding == NO_BUILDING || lessonsGap > 1))
-					dayBuldingsChange += 1;
+            maxBuildingsChangesForGroups = std::max(maxBuildingsChangesForGroups,
+                                                    std::inner_product(std::next(firstDayLessonIt), lastDayLessonIt,
+                                                                       firstDayLessonIt, std::size_t{0}, std::plus<>{}, buildingsChanged));
 
-                if(lessonsGap > 1)
-                    dayLessonsGapsSum += (lessonsGap - 1);
+            maxDayComplexity = std::max(maxDayComplexity,
+                                        std::accumulate(firstDayLessonIt, lastDayLessonIt, std::size_t{0}, [&](auto accum, auto&& p){
+                return accum + (p.first % MAX_LESSONS_PER_DAY) * requests.at(p.second).Complexity();
+            }));
 
-                dayComplexity += lessonInDay * scheduleData.SubjectRequests().at(index).Complexity();
-
-				prevLesson = lessonInDay;
-				prevBuilding = classroom.Building;
-			}
-
-            maxBuildingsDayEval = std::max(maxBuildingsDayEval, dayBuldingsChange);
-            maxDayComplexity = std::max(maxDayComplexity, dayComplexity);
-            maxLessonsGapsForGroupsSum = std::max(maxLessonsGapsForGroupsSum, dayLessonsGapsSum);
+            firstDayLessonIt = lastDayLessonIt;
         }
     }
 
-    return maxLessonsGapsForGroupsSum * 3 + maxLessonsGapsForProfessorsSum * 2 + maxDayComplexity * 4 + maxBuildingsDayEval * 64;
+    return maxLessonsGapsForGroups * 3 + 
+        maxLessonsGapsForProfessors * 2 + 
+        maxDayComplexity * 4 + 
+        maxBuildingsChangesForProfessors * 64 + 
+        maxBuildingsChangesForGroups * 64;
 }

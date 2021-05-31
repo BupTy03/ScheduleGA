@@ -28,11 +28,9 @@ set(SRC_FILE "main.cpp"
 			"ScheduleChromosomes.cpp")
 
 add_executable(ScheduleGA ${SRC_FILE})
-target_link_libraries(ScheduleGA PUBLIC CONAN_PKG::range-v3)
 target_compile_features(ScheduleGA PUBLIC cxx_std_20)
 
 add_library(LibScheduleGA STATIC ${SRC_FILE})
-target_link_libraries(LibScheduleGA PUBLIC CONAN_PKG::range-v3)
 target_compile_features(LibScheduleGA PUBLIC cxx_std_20)
 
 add_library(catch_main STATIC catch_main.cpp)
