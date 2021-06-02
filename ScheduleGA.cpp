@@ -66,9 +66,9 @@ ScheduleGAStatistics ScheduleGA::Start(const ScheduleData& scheduleData)
         // select best
         std::nth_element(individuals_.begin(), individuals_.begin() + params_.SelectionCount, individuals_.end(), ScheduleIndividualLess());
 
-        std::cout << "Iteration: " << iteration << "; Best: " << std::min_element(individuals_.begin(),
+        /*std::cout << "Iteration: " << iteration << "; Best: " << std::min_element(individuals_.begin(),
                                                                                   individuals_.begin() + params_.SelectionCount,
-                                                                                  ScheduleIndividualLess())->Evaluate() << '\n';
+                                                                                  ScheduleIndividualLess())->Evaluate() << '\n';*/
 
         // crossover
         for(std::size_t i = 0; i < params_.CrossoverCount; ++i)

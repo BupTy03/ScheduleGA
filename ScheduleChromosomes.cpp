@@ -156,6 +156,16 @@ bool ScheduleChromosomes::ClassroomsIntersects(std::size_t currentLesson,
     return false;
 }
 
+std::size_t ScheduleChromosomes::UnassignedLessonsCount() const
+{
+   return std::ranges::count(lessons_, NO_LESSON);
+}
+
+std::size_t ScheduleChromosomes::UnassignedClassroomsCount() const
+{
+   return std::ranges::count(classrooms_, ClassroomAddress::NoClassroom());
+}
+
 bool ReadyToCrossover(const ScheduleChromosomes& first,
                       const ScheduleChromosomes& second,
                       const ScheduleData& data,
@@ -197,14 +207,17 @@ std::size_t Evaluate(const ScheduleChromosomes& scheduleChromosomes,
     std::size_t maxBuildingsChangesForProfessors = 0;
 
     auto calculateGap = [](auto&& lhs, auto&& rhs) {
-        return lhs.first - rhs.first;
+        return lhs.first - rhs.first - 1;
     };
 
     auto buildingsChanged = [&](auto&& lhs, auto&& rhs) -> bool {
+        const auto lhsLesson = lhs.first;
+        const auto rhsLesson = rhs.first;
         const auto lhsBuilding = scheduleChromosomes.Classroom(lhs.second).Building;
         const auto rhsBuilding = scheduleChromosomes.Classroom(rhs.second).Building;
 
         return !(lhsBuilding == rhsBuilding || 
+                 lhsLesson - rhsLesson > 1  ||
                  lhsBuilding == NO_BUILDING || 
                  rhsBuilding == NO_BUILDING);
     };
@@ -226,7 +239,7 @@ std::size_t Evaluate(const ScheduleChromosomes& scheduleChromosomes,
         {
             const std::size_t day = firstDayLessonIt->first / MAX_LESSONS_PER_DAY;
             const std::size_t nextDayFirstLesson = (day + 1) * MAX_LESSONS_PER_DAY;
-            const auto lastDayLessonIt = std::ranges::lower_bound(lessonsBuffer, nextDayFirstLesson,
+            const auto lastDayLessonIt = std::ranges::lower_bound(std::next(firstDayLessonIt), lastLesson, nextDayFirstLesson,
                                                                   std::less<>{}, [](auto&& p) { return p.first; });
 
             maxLessonsGapsForProfessors = std::max(maxLessonsGapsForProfessors, 
@@ -256,7 +269,7 @@ std::size_t Evaluate(const ScheduleChromosomes& scheduleChromosomes,
         {
             const std::size_t day = firstDayLessonIt->first / MAX_LESSONS_PER_DAY;
             const std::size_t nextDayFirstLesson = (day + 1) * MAX_LESSONS_PER_DAY;
-            const auto lastDayLessonIt = std::ranges::lower_bound(lessonsBuffer, nextDayFirstLesson,
+            const auto lastDayLessonIt = std::ranges::lower_bound(std::next(firstDayLessonIt), lastLesson, nextDayFirstLesson,
                                                                   std::less<>{}, [](auto&& p) { return p.first; });
 
             maxLessonsGapsForGroups = std::max(maxLessonsGapsForGroups, 
@@ -280,5 +293,7 @@ std::size_t Evaluate(const ScheduleChromosomes& scheduleChromosomes,
         maxLessonsGapsForProfessors * 2 + 
         maxDayComplexity * 4 + 
         maxBuildingsChangesForProfessors * 64 + 
-        maxBuildingsChangesForGroups * 64;
+        maxBuildingsChangesForGroups * 64 +
+        scheduleChromosomes.UnassignedLessonsCount() * 128 +
+        scheduleChromosomes.UnassignedClassroomsCount() * 128;
 }
