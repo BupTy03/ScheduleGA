@@ -1,9 +1,7 @@
 #include "ScheduleCommon.h"
 
 #include <string>
-#include <cassert>
 #include <stdexcept>
-#include <algorithm>
 
 
 SubjectRequest::SubjectRequest(std::size_t id,
