@@ -154,64 +154,12 @@ static void FindOptimalParams(const std::vector<SubjectRequest>& requests, std::
 }
 
 
-static std::vector<bool> GenerateRandomWeekDays()
-{
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> dist(0, 1);
-	std::vector<bool> weekDays;
-	for(std::size_t i = 0; i < DAYS_IN_SCHEDULE_WEEK; ++i)
-		weekDays.emplace_back(dist(gen));
-	
-	return weekDays;
-}
-
-static std::size_t GenerateRandomVal(std::size_t minID, std::size_t maxID)
-{
-	std::random_device rd;
-	std::mt19937 gen(rd());
-	std::uniform_int_distribution<std::size_t> dist(minID, maxID);
-	return dist(gen);
-}
-
-static std::size_t GenerateRandomID(std::size_t maxID)
-{
-	return GenerateRandomVal(0, maxID);
-}
-
-static std::vector<std::size_t> GenerateIDArray(std::size_t n, std::size_t maxVal = 1000)
-{
-	std::vector<std::size_t> result(n);
-	for(auto& v : result)
-		v = GenerateRandomID(maxVal);
-
-	return result;
-}
-
-static std::vector<ClassroomAddress> GenerateRandomClassrooms(std::size_t n, std::size_t maxVal = 1000)
-{
-	std::vector<ClassroomAddress> result(n);
-	for(auto& c : result)
-		c = ClassroomAddress(0, GenerateRandomVal(1, maxVal));
-
-	return result;
-}
-
-
 int main()
 {
-	std::vector<SubjectRequest> requests;
-	for(std::size_t i = 0; i < 200; ++i)
-	{
-		requests.emplace_back(SubjectRequest(i, 
-											 GenerateRandomID(1000),
-											 GenerateRandomVal(1, 4),
-											 GenerateRandomWeekDays(),
-											 GenerateIDArray(GenerateRandomVal(1, 5), 10),
-											 GenerateRandomClassrooms(GenerateRandomVal(1, 3), 10)));
-	}
-
-	std::vector<SubjectWithAddress> lockedLessons = {
+	std::random_device randomDevice;
+	ScheduleDataGenerator generator{randomDevice, 1, 5, 0, 7};
+	const std::vector<SubjectRequest> requests = generator.GenerateSubjectRequests(200);
+	const std::vector<SubjectWithAddress> lockedLessons {
 		/*SubjectWithAddress(0, 0),
 		SubjectWithAddress(1, 1),
 		SubjectWithAddress(2, 2),
@@ -219,20 +167,16 @@ int main()
 		SubjectWithAddress(4, 4)*/
 	};
 
-	//FindOptimalParams(requests);
-	//FindOptimalIterationsCount(requests);
+	ScheduleGA algo{ScheduleGAParams{
+		.IndividualsCount = 1000,
+		.IterationsCount = 1100,
+		.SelectionCount = 360,
+		.CrossoverCount = 220,
+		.MutationChance = 49
+	}};
 
-	ScheduleGAParams params;
-	params.IndividualsCount = 1000;
-    params.IterationsCount = 1100;
-    params.SelectionCount = 360;
-    params.CrossoverCount = 220;
-    params.MutationChance = 49;
-
-	ScheduleGA algo(params);
-	const ScheduleData data(requests, lockedLessons);
+	const ScheduleData data{requests, lockedLessons};
 	const auto stat = algo.Start(data);
-
 	const auto& bestIndividual = algo.Individuals().front();
 	Print(bestIndividual, data);
 	std::cout << "Best: " << bestIndividual.Evaluate() << '\n';

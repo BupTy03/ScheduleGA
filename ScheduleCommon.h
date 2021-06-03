@@ -2,6 +2,7 @@
 #include "utils.h"
 
 #include <array>
+#include <random>
 #include <limits>
 #include <vector>
 #include <cassert>
@@ -17,6 +18,8 @@ constexpr auto DAYS_IN_SCHEDULE = DAYS_IN_SCHEDULE_WEEK * 2;
 constexpr auto MAX_LESSONS_COUNT = MAX_LESSONS_PER_DAY * DAYS_IN_SCHEDULE_WEEK * 2;
 constexpr auto RECOMMENDED_LESSONS_COUNT = 3;
 constexpr auto NO_BUILDING = std::numeric_limits<std::size_t>::max();
+constexpr auto MIN_COMPLEXITY = 1;
+constexpr auto MAX_COMPLEXITY = 4;
 
 
 struct ScheduleItem
@@ -220,6 +223,31 @@ private:
     std::vector<SubjectWithAddress> lockedLessons_;
     std::unordered_map<std::size_t, std::unordered_set<std::size_t>> professorRequests_;
     std::unordered_map<std::size_t, std::unordered_set<std::size_t>> groupRequests_;
+};
+
+
+class ScheduleDataGenerator
+{
+public:
+    explicit ScheduleDataGenerator(std::random_device& randDevice,
+                                   std::size_t minGroupsCount,
+                                   std::size_t maxGroupsCount,
+                                   std::size_t minClassroomsCount,
+                                   std::size_t maxClassroomsCount);
+
+    std::vector<bool> GenerateRandomWeekDays();
+    std::size_t GenerateRandomVal(std::size_t minID, std::size_t maxID);
+    std::size_t GenerateRandomID(std::size_t maxID = 1000);
+    std::vector<std::size_t> GenerateIDArray(std::size_t n);
+    std::vector<ClassroomAddress> GenerateRandomClassrooms(std::size_t n);
+    std::vector<SubjectRequest> GenerateSubjectRequests(std::size_t n);
+
+private:
+    std::size_t minGroupsCount_;
+    std::size_t maxGroupsCount_;
+    std::size_t minClassroomsCount_;
+    std::size_t maxClassroomsCount_;
+    std::mt19937 randGen_;
 };
 
 template<typename T>

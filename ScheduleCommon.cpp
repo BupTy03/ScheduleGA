@@ -92,3 +92,74 @@ bool ScheduleData::SubjectRequestHasLockedLesson(const SubjectRequest& request) 
 {
     return std::ranges::binary_search(lockedLessons_, request.ID(), {}, &SubjectWithAddress::SubjectRequestID);
 }
+
+
+ScheduleDataGenerator::ScheduleDataGenerator(std::random_device& randDevice,
+                                             std::size_t minGroupsCount,
+                                             std::size_t maxGroupsCount,
+                                             std::size_t minClassroomsCount,
+                                             std::size_t maxClassroomsCount)
+    : randGen_(randDevice())
+    , minGroupsCount_(minGroupsCount)
+    , maxGroupsCount_(maxGroupsCount)
+    , minClassroomsCount_(minClassroomsCount)
+    , maxClassroomsCount_(maxClassroomsCount)
+{
+}
+
+std::vector<bool> ScheduleDataGenerator::GenerateRandomWeekDays()
+{
+	std::uniform_int_distribution<int> dist(0, 1);
+	std::vector<bool> weekDays;
+	for(std::size_t i = 0; i < DAYS_IN_SCHEDULE_WEEK; ++i)
+		weekDays.emplace_back(dist(randGen_));
+	
+	return weekDays;
+}
+
+std::size_t ScheduleDataGenerator::GenerateRandomVal(std::size_t minID, std::size_t maxID)
+{
+	std::random_device rd;
+	std::mt19937 gen(rd());
+	std::uniform_int_distribution<std::size_t> dist(minID, maxID);
+	return dist(gen);
+}
+
+std::size_t ScheduleDataGenerator::GenerateRandomID(std::size_t maxID)
+{
+	return GenerateRandomVal(0, maxID);
+}
+
+std::vector<std::size_t> ScheduleDataGenerator::GenerateIDArray(std::size_t n)
+{
+	std::vector<std::size_t> result(n);
+	for(auto& v : result)
+		v = GenerateRandomID();
+
+	return result;
+}
+
+std::vector<ClassroomAddress> ScheduleDataGenerator::GenerateRandomClassrooms(std::size_t n)
+{
+	std::vector<ClassroomAddress> result(n);
+	for(auto& c : result)
+		c = ClassroomAddress(GenerateRandomID(5), GenerateRandomID(1000));
+
+	return result;
+}
+
+std::vector<SubjectRequest> ScheduleDataGenerator::GenerateSubjectRequests(std::size_t n)
+{
+    std::vector<SubjectRequest> requests;
+    requests.reserve(n);
+	for(std::size_t i = 0; i < n; ++i)
+	{
+		requests.emplace_back(i, 
+                              GenerateRandomID(),
+                              GenerateRandomVal(MIN_COMPLEXITY, MAX_COMPLEXITY),
+                              GenerateRandomWeekDays(),
+                              GenerateIDArray(GenerateRandomVal(minGroupsCount_, maxGroupsCount_)),
+                              GenerateRandomClassrooms(GenerateRandomVal(minClassroomsCount_, maxClassroomsCount_)));
+	}
+    return requests;
+}
