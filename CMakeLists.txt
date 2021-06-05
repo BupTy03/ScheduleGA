@@ -34,9 +34,13 @@ target_compile_features(LibScheduleGA PUBLIC cxx_std_20)
 add_library(catch_main STATIC catch_main.cpp)
 target_link_libraries(catch_main PUBLIC CONAN_PKG::catch2)
 
-add_executable(Catch_test_ScheduleGA test_ScheduleGA.cpp)
+add_executable(Catch_test_ScheduleGA "test_ScheduleGA.cpp")
 target_link_libraries(Catch_test_ScheduleGA PRIVATE catch_main LibScheduleGA)
 target_compile_features(Catch_test_ScheduleGA PUBLIC cxx_std_20)
+
+add_executable(Catch_benchmark_ScheduleGA "benchmark_ScheduleGA.cpp")
+target_link_libraries(Catch_benchmark_ScheduleGA PRIVATE catch_main LibScheduleGA)
+target_compile_features(Catch_benchmark_ScheduleGA PUBLIC cxx_std_20)
 
 
 catch_discover_tests(

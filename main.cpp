@@ -158,7 +158,7 @@ int main()
 {
 	std::random_device randomDevice;
 	ScheduleDataGenerator generator{randomDevice, 1, 5, 0, 7};
-	const std::vector<SubjectRequest> requests = generator.GenerateSubjectRequests(200);
+	const std::vector<SubjectRequest> requests = generator.GenerateSubjectRequests(10);
 	const std::vector<SubjectWithAddress> lockedLessons {
 		/*SubjectWithAddress(0, 0),
 		SubjectWithAddress(1, 1),
@@ -176,11 +176,10 @@ int main()
 	}};
 
 	const ScheduleData data{requests, lockedLessons};
-	const auto stat = algo.Start(data);
+	algo.Start(data);
 	const auto& bestIndividual = algo.Individuals().front();
 	Print(bestIndividual, data);
 	std::cout << "Best: " << bestIndividual.Evaluate() << '\n';
-	std::cout << "Time: " << std::chrono::duration_cast<std::chrono::milliseconds>(stat.Time).count() << "ms.\n";
 	std::cout.flush();
 	return 0;
 }

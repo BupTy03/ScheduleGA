@@ -41,7 +41,7 @@ ScheduleGAParams ScheduleGA::DefaultParams()
     return result;
 }
 
-ScheduleGAStatistics ScheduleGA::Start(const ScheduleData& scheduleData)
+void ScheduleGA::Start(const ScheduleData& scheduleData)
 {
     std::random_device randomDevice;
     const ScheduleIndividual firstIndividual(randomDevice, &scheduleData);
@@ -55,9 +55,6 @@ ScheduleGAStatistics ScheduleGA::Start(const ScheduleData& scheduleData)
     std::uniform_int_distribution<std::size_t> selectionBestDist(0, params_.SelectionCount - 1);
     std::uniform_int_distribution<std::size_t> individualsDist(0, individuals_.size() - 1);
 
-    const auto beginTime = std::chrono::steady_clock::now();
-
-    ScheduleGAStatistics result{};
     for(std::size_t iteration = 0; iteration < params_.IterationsCount; ++iteration)
     {
         // mutate
@@ -86,8 +83,6 @@ ScheduleGAStatistics ScheduleGA::Start(const ScheduleData& scheduleData)
     }
 
     std::sort(individuals_.begin(), individuals_.end(), ScheduleIndividualLess());
-    result.Time = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - beginTime);
-    return result;
 }
 
 const std::vector<ScheduleIndividual>& ScheduleGA::Individuals() const

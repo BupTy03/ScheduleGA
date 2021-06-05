@@ -206,7 +206,7 @@ class ScheduleData
 public:
     ScheduleData() = default;
     explicit ScheduleData(std::vector<SubjectRequest> subjectRequests,
-                          std::vector<SubjectWithAddress> lockedLessons);
+                          std::vector<SubjectWithAddress> lockedLessons = {});
 
     const std::vector<SubjectRequest>& SubjectRequests() const { return subjectRequests_; }
     const SubjectRequest& SubjectRequestAtID(std::size_t subjectRequestID) const;
