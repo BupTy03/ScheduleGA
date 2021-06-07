@@ -3,10 +3,11 @@
 
 #include <utility>
 #include <numeric>
+#include <ranges>
+#include <algorithm>
 #include <functional>
 
 
-static constexpr std::size_t NO_LESSON = std::numeric_limits<std::size_t>::max();
 static constexpr std::size_t NOT_EVALUATED = std::numeric_limits<std::size_t>::max();
 static constexpr std::size_t DEFAULT_BUFFER_SIZE = 1024;
 

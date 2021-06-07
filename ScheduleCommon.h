@@ -18,6 +18,7 @@ constexpr auto DAYS_IN_SCHEDULE = DAYS_IN_SCHEDULE_WEEK * 2;
 constexpr auto MAX_LESSONS_COUNT = MAX_LESSONS_PER_DAY * DAYS_IN_SCHEDULE_WEEK * 2;
 constexpr auto RECOMMENDED_LESSONS_COUNT = 3;
 constexpr auto NO_BUILDING = std::numeric_limits<std::size_t>::max();
+constexpr auto NO_LESSON = std::numeric_limits<std::size_t>::max();
 constexpr auto MIN_COMPLEXITY = 1;
 constexpr auto MAX_COMPLEXITY = 4;
 

@@ -38,7 +38,8 @@ public:
     std::size_t UnassignedClassroomsCount() const;
 
 private:
-    void InitFromRequest(const ScheduleData& data, std::size_t requestIndex);
+    void InitFromRequest(const ScheduleData& data,
+                         std::size_t requestIndex);
 
 private:
     std::vector<std::size_t> lessons_;

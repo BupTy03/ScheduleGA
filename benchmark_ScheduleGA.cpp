@@ -9,20 +9,20 @@ TEST_CASE("ScheduleGA benchmark")
 {
     std::random_device randomDevice;
 
-	ScheduleDataGenerator generator{randomDevice, 1, 5, 0, 7};
-	const ScheduleData data{generator.GenerateSubjectRequests(200)};
+    ScheduleDataGenerator generator{randomDevice, 1, 5, 0, 7};
+    const ScheduleData data{generator.GenerateSubjectRequests(200)};
 
-	ScheduleGA algo{ScheduleGAParams{
-		.IndividualsCount = 100,
-		.IterationsCount = 1000,
-		.SelectionCount = 36,
-		.CrossoverCount = 22,
-		.MutationChance = 49
-	}};
+    ScheduleGA algo{ScheduleGAParams{
+        .IndividualsCount = 100,
+        .IterationsCount = 1000,
+        .SelectionCount = 36,
+        .CrossoverCount = 22,
+        .MutationChance = 49
+    }};
 
-    BENCHMARK("ScheduleGA") 
-	{
-		algo.Start(data);
+    BENCHMARK("ScheduleGA")
+    {
+        algo.Start(data);
         return algo.Individuals().front().Evaluate();
     };
 }
